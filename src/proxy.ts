@@ -15,9 +15,9 @@ export function proxy(request: NextRequest) {
   if (!hasSession && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-  if (hasSession && (path === "/login" || path === "/register")) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // Never redirect away from public pages here: a stale cookie would bounce
+  // between /login and /dashboard forever. The (auth) layout checks the real
+  // session server-side and forwards genuinely signed-in users.
   return NextResponse.next();
 }
 
