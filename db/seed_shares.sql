@@ -1,31 +1,28 @@
 -- ─────────────────────────────────────────────────────────────────────
--- SHARE PACKAGES SEED — FILL THIS IN FROM THE REFERENCE IMAGE
---
--- Prices were intentionally NOT invented. Replace each `null` price with the
--- exact value from your reference image, then run this file in the Supabase
--- SQL editor. The insert is idempotent (keyed on symbol), so re-running it
--- after price edits is safe.
+-- SHARE PACKAGES SEED. Run with:  npm run db:seed
+-- Idempotent (keyed on symbol): edit a price here and re-run to update it.
 --
 -- tier:   'standard' | 'premium' | 'vip'
 -- status: 'available' | 'sold_out' | 'coming_soon' | 'hidden'
--- badge:  optional short label shown on the row/card, e.g. 'Popular'
+-- badge:  optional short label shown next to the name, e.g. 'Popular'
 --
--- Rows with a null price are skipped so nothing incomplete is published.
+-- Prices are the ones supplied in the project's share table.
+-- Tiers below are a default split and can be changed freely.
 -- ─────────────────────────────────────────────────────────────────────
 
 insert into public.shares (name, symbol, description, price, tier, badge, status, display_order)
-select v.name, v.symbol, v.description, v.price, v.tier, v.badge, v.status, v.display_order
-from (values
-  --  name      symbol    description    price          tier        badge        status       order
-  ('NVVY 1',  'NVVY1',  'Nivvy Share', null::numeric, 'standard', null::text,  'available',  1),
-  ('NVVY 2',  'NVVY2',  'Nivvy Share', null,          'standard', null,        'available',  2),
-  ('NVVY 3',  'NVVY3',  'Nivvy Share', null,          'standard', null,        'available',  3),
-  ('NVVY 4',  'NVVY4',  'Nivvy Share', null,          'premium',  null,        'available',  4),
-  ('NVVY 5',  'NVVY5',  'Nivvy Share', null,          'premium',  null,        'available',  5),
-  -- add the remaining NVVY rows here, matching the image ...
-  ('VIP 1',   'VIP1',   'Nivvy VIP Share', null,      'vip',      null,        'available', 99)
-) as v(name, symbol, description, price, tier, badge, status, display_order)
-where v.price is not null
+values
+  ('Nivvy 1',  'NVVY1',  'Nivvy Share',     3500,   'standard', null, 'available',  1),
+  ('Nivvy 2',  'NVVY2',  'Nivvy Share',     5000,   'standard', null, 'available',  2),
+  ('Nivvy 3',  'NVVY3',  'Nivvy Share',     10000,  'standard', null, 'available',  3),
+  ('Nivvy 4',  'NVVY4',  'Nivvy Share',     20000,  'standard', null, 'available',  4),
+  ('Nivvy 5',  'NVVY5',  'Nivvy Share',     30000,  'standard', null, 'available',  5),
+  ('Nivvy 6',  'NVVY6',  'Nivvy Share',     40000,  'premium',  null, 'available',  6),
+  ('Nivvy 7',  'NVVY7',  'Nivvy Share',     50000,  'premium',  null, 'available',  7),
+  ('Nivvy 8',  'NVVY8',  'Nivvy Share',     80000,  'premium',  null, 'available',  8),
+  ('Nivvy 9',  'NVVY9',  'Nivvy Share',     100000, 'premium',  null, 'available',  9),
+  ('Nivvy 10', 'NVVY10', 'Nivvy Share',     200000, 'premium',  null, 'available', 10),
+  ('Nivvy 11', 'NVVY11', 'Nivvy VIP Share', 500000, 'vip',      null, 'available', 11)
 on conflict (symbol) do update set
   name = excluded.name,
   description = excluded.description,

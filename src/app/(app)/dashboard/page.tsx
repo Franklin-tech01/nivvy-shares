@@ -6,36 +6,32 @@ import { PortfolioCard } from "@/components/dashboard/portfolio-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { WelcomeBonusCard } from "@/components/dashboard/welcome-bonus-card";
 import { ErrorNotice } from "@/components/layout/page-header";
-import { SharePricingTable } from "@/components/marketplace/share-pricing-table";
 import {
 	getCurrentUser,
 	getHoldings,
 	getLoginReward,
 	getPortfolio,
 	getProfile,
-	getShares,
 	getWelcomeBonus,
 } from "@/lib/data";
 import { realEmail } from "@/lib/phone";
 import { firstName } from "@/lib/utils";
-import NivvyPlans from "@/components/dashboard/share-table";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
-	const [user, profile, portfolio, holdings, shares, reward, bonus] =
+	const [user, profile, portfolio, holdings, reward, bonus] =
 		await Promise.all([
 			getCurrentUser(),
 			getProfile(),
 			getPortfolio(),
 			getHoldings(),
-			getShares(),
 			getLoginReward(),
 			getWelcomeBonus(),
 		]);
 
 	const sharesOwned = holdings.data.reduce((n, h) => n + h.quantity, 0);
-	const errors = [profile, portfolio, holdings, shares, reward, bonus]
+	const errors = [profile, portfolio, holdings, reward, bonus]
 		.map((r) => r.error)
 		.filter(Boolean) as string[];
 
@@ -55,16 +51,12 @@ export default async function DashboardPage() {
 				/>
 			</div>
 
-			<NivvyPlans />
-
 			<QuickActions />
 
 			<div className='grid gap-4 lg:grid-cols-2'>
 				<WelcomeBonusCard bonus={bonus.data} />
 				<DailyLoginCard reward={reward.data} />
 			</div>
-
-			<SharePricingTable shares={shares.data} showAllLink />
 		</div>
 	);
 }
