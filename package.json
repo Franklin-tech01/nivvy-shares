@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "node --env-file=.env.local scripts/db-apply.mjs db/migrations/0001_init.sql",
+    "db:migrate": "node --env-file=.env.local scripts/db-migrate.mjs",
     "db:seed": "node --env-file=.env.local scripts/db-apply.mjs db/seed_shares.sql"
   },
   "dependencies": {

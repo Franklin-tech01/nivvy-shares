@@ -10,11 +10,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
-    // No email provider is connected yet. Until one is, reset links are logged
-    // on the server so the flow can be tested. Replace with a real mailer.
-    sendResetPassword: async ({ user, url }) => {
-      console.log(`[auth] password reset link for ${user.email}: ${url}`);
-    },
+    // Accounts are identified by phone number (see `@/lib/phone`). Self-service
+    // reset needs an SMS provider; until then resets go through support.
   },
   plugins: [nextCookies()], // must stay last
 });

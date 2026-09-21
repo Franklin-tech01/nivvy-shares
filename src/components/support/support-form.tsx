@@ -41,7 +41,7 @@ export function SupportForm({ defaultName, defaultEmail }: { defaultName: string
           <Field label="Name" htmlFor="s-name" error={errors.name?.message}>
             <Input id="s-name" aria-invalid={!!errors.name} {...register("name")} />
           </Field>
-          <Field label="Email" htmlFor="s-email" error={errors.email?.message}>
+          <Field label="Email (optional)" htmlFor="s-email" error={errors.email?.message}>
             <Input id="s-email" type="email" aria-invalid={!!errors.email} {...register("email")} />
           </Field>
         </div>

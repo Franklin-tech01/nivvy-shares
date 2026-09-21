@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Field, Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/schemas";
+import { normalizePhone, phoneToEmail } from "@/lib/phone";
 
 type Values = z.infer<typeof loginSchema>;
 
@@ -27,20 +28,20 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "", remember: true },
+    defaultValues: { phone: "", password: "", remember: true },
   });
 
   async function onSubmit(v: Values) {
     // rememberMe=false makes the session end when the browser closes.
     const { error } = await authClient.signIn.email({
-      email: v.email,
+      email: phoneToEmail(normalizePhone(v.phone)!),
       password: v.password,
       rememberMe: !!v.remember,
     });
     if (error) {
       toast.error(
         error.status === 401 || error.status === 400
-          ? "Incorrect email or password."
+          ? "Incorrect phone number or password."
           : error.message || "Could not sign in.",
       );
       return;
@@ -55,14 +56,15 @@ export function LoginForm() {
       <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your Nivvy account.</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4" noValidate>
-        <Field label="Email" htmlFor="email" error={errors.email?.message}>
+        <Field label="Phone number" htmlFor="phone" error={errors.phone?.message}>
           <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            aria-invalid={!!errors.email}
-            {...register("email")}
+            id="phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="0801 234 5678"
+            aria-invalid={!!errors.phone}
+            {...register("phone")}
           />
         </Field>
 

@@ -16,6 +16,7 @@ import {
   getShares,
   getWelcomeBonus,
 } from "@/lib/data";
+import { realEmail } from "@/lib/phone";
 import { firstName } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -38,7 +39,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <DashboardHeader name={firstName(profile.data?.full_name, user?.email)} />
+      <DashboardHeader name={firstName(profile.data?.full_name, realEmail(user?.email))} />
       {errors.length > 0 && <ErrorNotice message={errors[0]} />}
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">

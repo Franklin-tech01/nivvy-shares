@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 import { registerSchema } from "@/lib/schemas";
+import { normalizePhone, phoneToEmail } from "@/lib/phone";
 
 type Values = z.infer<typeof registerSchema>;
 
@@ -26,11 +27,15 @@ export default function RegisterPage() {
   async function onSubmit(v: Values) {
     const { error } = await authClient.signUp.email({
       name: v.full_name,
-      email: v.email,
+      email: phoneToEmail(normalizePhone(v.phone)!),
       password: v.password,
     });
     if (error) {
-      toast.error(error.message || "Could not create your account.");
+      toast.error(
+        /exist/i.test(error.message ?? "") || error.code === "USER_ALREADY_EXISTS"
+          ? "An account with this phone number already exists."
+          : error.message || "Could not create your account.",
+      );
       return;
     }
     router.replace("/dashboard");
@@ -46,8 +51,8 @@ export default function RegisterPage() {
         <Field label="Full name" htmlFor="full_name" error={errors.full_name?.message}>
           <Input id="full_name" autoComplete="name" aria-invalid={!!errors.full_name} {...register("full_name")} />
         </Field>
-        <Field label="Email" htmlFor="email" error={errors.email?.message}>
-          <Input id="email" type="email" autoComplete="email" aria-invalid={!!errors.email} {...register("email")} />
+        <Field label="Phone number" htmlFor="phone" error={errors.phone?.message}>
+          <Input id="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="0801 234 5678" aria-invalid={!!errors.phone} {...register("phone")} />
         </Field>
         <Field label="Password" htmlFor="password" error={errors.password?.message}>
           <Input id="password" type="password" autoComplete="new-password" aria-invalid={!!errors.password} {...register("password")} />

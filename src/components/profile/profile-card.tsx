@@ -26,7 +26,7 @@ export function ProfileCard({ profile }: { profile: Profile }) {
     formState: { errors, isSubmitting, isDirty },
   } = useForm<Values>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { full_name: profile.full_name ?? "", phone: profile.phone ?? "" },
+    defaultValues: { full_name: profile.full_name ?? "" },
   });
 
   async function onSubmit(v: Values) {
@@ -36,7 +36,7 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   }
 
   const details = [
-    ["Email", profile.email ?? "—"],
+    ["Phone", profile.phone ?? "—"],
     ["Account ID", profile.id.slice(0, 8).toUpperCase()],
     ["Date joined", formatDate(profile.created_at)],
   ];
@@ -72,12 +72,12 @@ export function ProfileCard({ profile }: { profile: Profile }) {
           <Field label="Full name" htmlFor="p-name" error={errors.full_name?.message}>
             <Input id="p-name" autoComplete="name" aria-invalid={!!errors.full_name} {...register("full_name")} />
           </Field>
-          <Field label="Email" htmlFor="p-email">
-            <Input id="p-email" value={profile.email ?? ""} disabled readOnly />
+          <Field label="Phone number" htmlFor="p-phone">
+            <Input id="p-phone" value={profile.phone ?? ""} disabled readOnly />
           </Field>
-          <Field label="Phone number" htmlFor="p-phone" error={errors.phone?.message}>
-            <Input id="p-phone" type="tel" autoComplete="tel" placeholder="+234…" aria-invalid={!!errors.phone} {...register("phone")} />
-          </Field>
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Your phone number is your login. Contact support to change it.
+          </p>
           <Button type="submit" disabled={isSubmitting || !isDirty}>
             {isSubmitting && <Loader2 className="animate-spin" />} Save changes
           </Button>

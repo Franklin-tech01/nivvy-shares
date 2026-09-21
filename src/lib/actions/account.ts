@@ -16,10 +16,10 @@ export async function updateProfile(input: z.infer<typeof profileSchema>): Promi
   if (!user) return { ok: false, error: "You are signed out." };
 
   try {
-    // Only name and phone are user-editable; status/email/id never come from the client.
-    await query("update profiles set full_name = $1, phone = $2 where id = $3", [
+    // Only the name is user-editable. The phone number is the login identity;
+    // status/id never come from the client.
+    await query("update profiles set full_name = $1 where id = $2", [
       parsed.data.full_name,
-      parsed.data.phone || null,
       user.id,
     ]);
   } catch {
@@ -40,9 +40,11 @@ export async function submitSupportTicket(
 
   try {
     const { name, email, subject, message } = parsed.data;
+    // The account phone comes from the server-side profile, never from the form.
     await query(
-      "insert into support_tickets (user_id, name, email, subject, message) values ($1, $2, $3, $4, $5)",
-      [user.id, name, email, subject, message],
+      `insert into support_tickets (user_id, name, email, phone, subject, message)
+       values ($1, $2, $3, (select phone from profiles where id = $1), $4, $5)`,
+      [user.id, name, email || null, subject, message],
     );
   } catch {
     return { ok: false, error: "Could not send your message. Try again." };

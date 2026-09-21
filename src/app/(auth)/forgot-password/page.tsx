@@ -1,54 +1,28 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field } from "@/components/ui/label";
-import { authClient } from "@/lib/auth-client";
-import { forgotSchema } from "@/lib/schemas";
+import { links } from "@/lib/config";
 
-type Values = z.infer<typeof forgotSchema>;
-
+// Self-service reset needs an SMS provider (not connected yet), so for now
+// people are pointed to support. Swap this page for an OTP flow later.
 export default function ForgotPasswordPage() {
-  const [sent, setSent] = useState(false);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(forgotSchema) });
-
-  async function onSubmit(v: Values) {
-    const { error } = await authClient.requestPasswordReset({
-      email: v.email,
-      redirectTo: "/reset-password",
-    });
-    if (error) toast.error(error.message || "Could not send the reset link.");
-    else setSent(true);
-  }
-
+  const contact = links.whatsapp || (links.supportEmail ? `mailto:${links.supportEmail}` : "");
   return (
     <div>
-      <h2 className="font-display text-2xl font-semibold tracking-tight">Reset your password</h2>
-      <p className="mt-1.5 text-sm text-muted-foreground">
-        {sent
-          ? "If an account exists for that email, a reset link is on its way."
-          : "Enter your email and we will send you a reset link."}
+      <div className="grid size-12 place-items-center rounded-full bg-primary-soft text-warning">
+        <KeyRound />
+      </div>
+      <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight">Forgot your password?</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Password resets are handled by our support team for now. Contact us from the phone number on
+        your account and we will help you get back in.
       </p>
-      {!sent && (
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4" noValidate>
-          <Field label="Email" htmlFor="email" error={errors.email?.message}>
-            <Input id="email" type="email" autoComplete="email" aria-invalid={!!errors.email} {...register("email")} />
-          </Field>
-          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="animate-spin" />} Send reset link
-          </Button>
-        </form>
+      {contact && (
+        <Button asChild className="mt-6 w-full" size="lg">
+          <a href={contact} target="_blank" rel="noopener noreferrer">
+            Contact support
+          </a>
+        </Button>
       )}
       <p className="mt-6 text-center text-sm">
         <Link href="/login" className="font-semibold hover:underline">

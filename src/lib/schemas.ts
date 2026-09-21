@@ -1,7 +1,14 @@
 import { z } from "zod";
+import { normalizePhone } from "@/lib/phone";
+
+const phone = z
+  .string()
+  .trim()
+  .min(1, "Enter your phone number")
+  .refine((v) => normalizePhone(v) !== null, "Enter a valid phone number");
 
 export const loginSchema = z.object({
-  email: z.string().trim().email("Enter a valid email"),
+  phone,
   password: z.string().min(1, "Enter your password"),
   remember: z.boolean().optional(),
 });
@@ -9,7 +16,7 @@ export const loginSchema = z.object({
 export const registerSchema = z
   .object({
     full_name: z.string().trim().min(2, "Enter your full name").max(80),
-    email: z.string().trim().email("Enter a valid email"),
+    phone,
     password: z.string().min(8, "Use at least 8 characters"),
     confirm: z.string(),
   })
@@ -18,22 +25,14 @@ export const registerSchema = z
     message: "Passwords do not match",
   });
 
-export const forgotSchema = z.object({ email: z.string().trim().email("Enter a valid email") });
-
+// The phone number is the login identity, so it is not editable here.
 export const profileSchema = z.object({
   full_name: z.string().trim().min(2, "Enter your full name").max(80),
-  phone: z
-    .string()
-    .trim()
-    .max(20)
-    .regex(/^[+\d\s()-]*$/, "Enter a valid phone number")
-    .optional()
-    .or(z.literal("")),
 });
 
 export const supportSchema = z.object({
   name: z.string().trim().min(2, "Enter your name").max(80),
-  email: z.string().trim().email("Enter a valid email"),
+  email: z.string().trim().email("Enter a valid email").optional().or(z.literal("")),
   subject: z.string().trim().min(3, "Add a subject").max(120),
   message: z.string().trim().min(10, "Tell us a bit more (10+ characters)").max(2000),
 });

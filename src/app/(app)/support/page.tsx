@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { SupportCard } from "@/components/support/support-card";
 import { SupportForm } from "@/components/support/support-form";
 import { getCurrentUser, getProfile } from "@/lib/data";
+import { realEmail } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "Customer Service" };
 
@@ -12,7 +13,7 @@ export default async function SupportPage() {
     <div className="space-y-6">
       <PageHeader title="Need help?" description="Reach the Nivvy team or the community." />
       <SupportCard />
-      <SupportForm defaultName={profile.data?.full_name ?? ""} defaultEmail={user?.email ?? ""} />
+      <SupportForm defaultName={profile.data?.full_name ?? ""} defaultEmail={realEmail(user?.email) ?? ""} />
     </div>
   );
 }
