@@ -3,20 +3,20 @@
 -- Everything here is marked  metadata.demo = true  and "[Demo]" in the
 -- description. These are NOT real balances, deposits, or returns.
 --
--- Usage: set the email below, run in the SQL editor (runs as postgres,
+-- Usage: set the phone number below, run in the SQL editor (runs as postgres,
 -- bypassing RLS). Never run this against real customer accounts.
 -- ─────────────────────────────────────────────────────────────────────
 do $$
 declare
-  demo_email text := 'you@example.com';   -- <-- change me
+  demo_phone text := '+2348012345678';   -- <-- change me (international format)
   uid text;
   s record;
   total_inv numeric := 0;
   total_val numeric := 0;
 begin
-  select id into uid from "user" where email = demo_email;
+  select id into uid from profiles where phone = demo_phone;
   if uid is null then
-    raise exception 'No user with email %', demo_email;
+    raise exception 'No account with phone %', demo_phone;
   end if;
 
   delete from public.transactions where user_id = uid and (metadata ->> 'demo') = 'true';
