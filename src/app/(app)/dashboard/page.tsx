@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BalanceCard } from "@/components/dashboard/balance-card";
 import { DailyLoginCard } from "@/components/dashboard/daily-login-card";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { HoldingsCard } from "@/components/dashboard/holdings-card";
 import { PortfolioCard } from "@/components/dashboard/portfolio-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { WelcomeBonusCard } from "@/components/dashboard/welcome-bonus-card";
@@ -52,6 +53,8 @@ export default async function DashboardPage() {
 			</div>
 
 			<QuickActions />
+
+			<HoldingsCard holdings={holdings.data} />
 
 			<div className='grid gap-4 lg:grid-cols-2'>
 				<WelcomeBonusCard bonus={bonus.data} />

@@ -6,6 +6,8 @@ import { query, withTransaction } from "@/lib/db";
 import { getCurrentUser } from "@/lib/data";
 import { initializeCharge } from "@/lib/korapay";
 import { realEmail } from "@/lib/phone";
+import { MIN_DEPOSIT_AMOUNT } from "@/lib/config";
+import { formatMoney } from "@/lib/utils";
 
 export type PaymentResult =
   | { ok: true; checkoutUrl: string }
@@ -25,7 +27,11 @@ function reference(prefix: string) {
 export async function initiateDeposit(input: { amount: number; method: string }): Promise<PaymentResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "You are signed out." };
-  if (!(input.amount > 0)) return { ok: false, error: "Enter a valid amount." };
+  // Mirrors depositSchema's client-side check; enforced again here since a
+  // server action can be called directly, bypassing the form.
+  if (!(input.amount >= MIN_DEPOSIT_AMOUNT)) {
+    return { ok: false, error: `Minimum deposit is ${formatMoney(MIN_DEPOSIT_AMOUNT)}.` };
+  }
 
   const ref = reference("DEP");
 

@@ -12,7 +12,7 @@
 
 insert into public.shares (name, symbol, description, price, tier, badge, status, display_order)
 values
-  ('Nivvy 1',  'NVVY1',  'Nivvy Share',     3500,   'standard', null, 'available',  1),
+  ('Nivvy 1',  'NVVY1',  'Nivvy Share',     3000,   'standard', null, 'available',  1),
   ('Nivvy 2',  'NVVY2',  'Nivvy Share',     5000,   'standard', null, 'available',  2),
   ('Nivvy 3',  'NVVY3',  'Nivvy Share',     10000,  'standard', null, 'available',  3),
   ('Nivvy 4',  'NVVY4',  'Nivvy Share',     20000,  'standard', null, 'available',  4),

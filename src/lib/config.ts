@@ -25,3 +25,6 @@ export const COMMUNITY_POPUP_STORAGE_KEY = "nivvy:community-popup-dismissed";
  * Withdrawals still have no payout provider wired up.
  */
 export const WITHDRAWALS_ENABLED = false;
+
+/** Smallest amount a user can deposit in one go (NGN). Enforced client + server side. */
+export const MIN_DEPOSIT_AMOUNT = 3000;

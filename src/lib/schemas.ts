@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { normalizePhone } from "@/lib/phone";
+import { MIN_DEPOSIT_AMOUNT } from "@/lib/config";
 
 const phone = z
   .string()
@@ -44,7 +45,10 @@ const amount = z
   .refine((v) => Number(v) > 0, "Amount must be greater than zero");
 
 export const depositSchema = z.object({
-  amount,
+  amount: amount.refine(
+    (v) => Number(v) >= MIN_DEPOSIT_AMOUNT,
+    `Minimum deposit is ₦${MIN_DEPOSIT_AMOUNT.toLocaleString("en-NG")}`,
+  ),
   method: z.string().min(1, "Choose a payment method"),
 });
 

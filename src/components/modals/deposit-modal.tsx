@@ -12,6 +12,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { depositSchema } from "@/lib/schemas";
 import { initiateDeposit } from "@/lib/actions/payments";
+import { MIN_DEPOSIT_AMOUNT } from "@/lib/config";
 
 type Values = z.infer<typeof depositSchema>;
 
@@ -51,7 +52,7 @@ export function DepositModal({
             <Input
               id="dep-amount"
               inputMode="decimal"
-              placeholder="0.00"
+              placeholder={`Minimum ₦${MIN_DEPOSIT_AMOUNT.toLocaleString("en-NG")}`}
               disabled={busy}
               aria-invalid={!!errors.amount}
               {...register("amount")}
