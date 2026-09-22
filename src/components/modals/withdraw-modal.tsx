@@ -11,6 +11,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { withdrawSchema } from "@/lib/schemas";
 import { requestWithdrawal } from "@/lib/actions/payments";
+import { WITHDRAWALS_ENABLED } from "@/lib/config";
 
 type Values = z.infer<typeof withdrawSchema>;
 
@@ -68,7 +69,7 @@ export function WithdrawModal({
             <Info className="mt-0.5 size-4 shrink-0" />
             <p>Withdrawal processing will be available soon.</p>
           </div>
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button type="submit" className="w-full" disabled={isSubmitting || !WITHDRAWALS_ENABLED}>
             <ArrowUpFromLine /> Continue
           </Button>
         </form>

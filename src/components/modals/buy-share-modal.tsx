@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Info, Minus, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/brand/logo";
 import { formatMoney } from "@/lib/utils";
 import { purchaseShare } from "@/lib/actions/payments";
-import { PAYMENTS_ENABLED } from "@/lib/config";
 import type { Share } from "@/lib/types";
 
 export function BuyShareModal({
@@ -18,6 +18,7 @@ export function BuyShareModal({
   share: Share | null;
   onOpenChange: (open: boolean) => void;
 }) {
+  const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const [busy, setBusy] = useState(false);
 
@@ -26,7 +27,13 @@ export function BuyShareModal({
     setBusy(true);
     try {
       const res = await purchaseShare({ shareId: share.id, quantity });
-      if (!res.ok) toast.info("Purchases are not enabled yet. Nothing was charged.");
+      if (res.ok) {
+        toast.success(`Purchased ${quantity} × ${share.name}.`);
+        onOpenChange(false);
+        router.refresh();
+      } else {
+        toast.error(res.error);
+      }
     } finally {
       setBusy(false);
     }
@@ -91,15 +98,10 @@ export function BuyShareModal({
               </div>
             </dl>
 
-            {!PAYMENTS_ENABLED && (
-              <div className="flex gap-2.5 rounded-md bg-primary-soft p-3 text-sm text-warning">
-                <Info className="mt-0.5 size-4 shrink-0" />
-                <p>Share purchases are coming soon. You will not be charged.</p>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground">Paid from your Nivvy balance. Deposit funds first if needed.</p>
 
-            <Button className="w-full" size="lg" onClick={confirm} disabled={busy || !PAYMENTS_ENABLED}>
-              Confirm Purchase
+            <Button className="w-full" size="lg" onClick={confirm} disabled={busy}>
+              {busy && <Loader2 className="animate-spin" />} Confirm Purchase
             </Button>
           </div>
         )}

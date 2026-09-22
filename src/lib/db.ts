@@ -20,3 +20,26 @@ export async function query<T = Record<string, unknown>>(text: string, params: u
   const res = await pool.query(text, params);
   return res.rows as T[];
 }
+
+type TxQuery = <T = Record<string, unknown>>(text: string, params?: unknown[]) => Promise<T[]>;
+
+/**
+ * Runs `fn` inside a single transaction on one client (begin/commit/rollback).
+ * Use for multi-statement writes that must all succeed or all fail together,
+ * e.g. crediting a balance and inserting the matching transaction row.
+ */
+export async function withTransaction<T>(fn: (query: TxQuery) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const txQuery: TxQuery = async (text, params = []) => (await client.query(text, params)).rows;
+    const result = await fn(txQuery);
+    await client.query("commit");
+    return result;
+  } catch (e) {
+    await client.query("rollback");
+    throw e;
+  } finally {
+    client.release();
+  }
+}

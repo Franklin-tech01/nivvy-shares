@@ -20,5 +20,8 @@ export const DAILY_REWARD_AMOUNTS: (number | null)[] = [
 
 export const COMMUNITY_POPUP_STORAGE_KEY = "nivvy:community-popup-dismissed";
 
-/** Flip to true once the real payment provider is wired up. */
-export const PAYMENTS_ENABLED = false;
+/**
+ * Deposits (Korapay) and share purchases (internal balance) are live.
+ * Withdrawals still have no payout provider wired up.
+ */
+export const WITHDRAWALS_ENABLED = false;
