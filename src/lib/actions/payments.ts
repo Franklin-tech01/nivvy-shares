@@ -28,15 +28,28 @@ export async function initiateDeposit(input: { amount: number; method: string })
   if (!(input.amount > 0)) return { ok: false, error: "Enter a valid amount." };
 
   const ref = reference("DEP");
+
+  // Split into two try/catches so Vercel's function log says which stage
+  // failed (database vs Korapay) instead of one generic message for both.
+  // The two inserts run in one transaction so a mid-way failure never
+  // leaves a deposit row without its matching transaction row.
   try {
-    await query(
-      "insert into deposits (user_id, amount, status, payment_reference, payment_method) values ($1, $2, 'pending', $3, $4)",
-      [user.id, input.amount, ref, input.method],
-    );
-    await query(
-      "insert into transactions (user_id, type, amount, status, reference, description) values ($1, 'deposit', $2, 'pending', $3, $4)",
-      [user.id, input.amount, ref, `Deposit via ${input.method.replace("_", " ")}`],
-    );
+    await withTransaction(async (q) => {
+      await q(
+        "insert into deposits (user_id, amount, status, payment_reference, payment_method) values ($1, $2, 'pending', $3, $4)",
+        [user.id, input.amount, ref, input.method],
+      );
+      await q(
+        "insert into transactions (user_id, type, amount, status, reference, description) values ($1, 'deposit', $2, 'pending', $3, $4)",
+        [user.id, input.amount, ref, `Deposit via ${input.method.replace("_", " ")}`],
+      );
+    });
+  } catch (e) {
+    console.error("[deposit:db]", e);
+    return { ok: false, error: "Could not start the deposit (database). Please try again." };
+  }
+
+  try {
     const { checkoutUrl } = await initializeCharge({
       amount: input.amount,
       reference: ref,
@@ -46,8 +59,8 @@ export async function initiateDeposit(input: { amount: number; method: string })
     });
     return { ok: true, checkoutUrl };
   } catch (e) {
-    console.error("[deposit]", e);
-    return { ok: false, error: "Could not start the deposit. Please try again." };
+    console.error("[deposit:korapay]", e);
+    return { ok: false, error: "Could not start the deposit (payment provider). Please try again." };
   }
 }
 
