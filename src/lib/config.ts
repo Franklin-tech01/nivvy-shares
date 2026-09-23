@@ -21,10 +21,11 @@ export const DAILY_REWARD_AMOUNTS: (number | null)[] = [
 export const COMMUNITY_POPUP_STORAGE_KEY = "nivvy:community-popup-dismissed";
 
 /**
- * Deposits (Korapay) and share purchases (internal balance) are live.
- * Withdrawals still have no payout provider wired up.
+ * Deposits (Korapay), share purchases and withdrawal requests are all live.
+ * Withdrawals still have no automated payout provider — an admin reviews
+ * and pays each one out manually (see /admin/withdrawals).
  */
-export const WITHDRAWALS_ENABLED = false;
+export const WITHDRAWALS_ENABLED = true;
 
 /** Smallest amount a user can deposit in one go (NGN). Enforced client + server side. */
 export const MIN_DEPOSIT_AMOUNT = 3000;

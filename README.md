@@ -14,16 +14,38 @@ No landing page: `/` sends signed-out users to `/login`, signed-in users to `/da
 5. Optional demo data for one account: edit the phone number in `db/seed_demo_user.sql` and run
    `node --env-file=.env.local scripts/db-apply.mjs db/seed_demo_user.sql`. Rows are marked `[Demo]`.
 6. Set `KORAPAY_SECRET_KEY` (deposits won't work without it — see below).
-7. `npm run dev`
+7. Grant yourself admin access: `node --env-file=.env.local scripts/set-admin.mjs +2348012345678`
+   (use the phone number you registered with). Revoke with `--revoke`.
+8. `npm run dev`
 
 ## Where things live
 
 - Design tokens: `src/app/globals.css`
-- Links/config: `src/lib/config.ts` (env-driven community/support links, daily reward amounts, `WITHDRAWALS_ENABLED`)
+- Links/config: `src/lib/config.ts` (env-driven community/support links, daily reward amounts,
+  `WITHDRAWALS_ENABLED`, `MIN_DEPOSIT_AMOUNT`)
 - Auth: `src/lib/auth.ts` (server), `src/lib/auth-client.ts` (browser), `src/proxy.ts` (optimistic redirect)
-- Data access: `src/lib/data/index.ts` (cached server reads, all scoped by the signed-in user)
-- Payments: `src/lib/actions/payments.ts`, `src/lib/korapay.ts`. Deposits and share purchases are live;
-  withdrawals are not (no payout provider yet).
+- Data access: `src/lib/data/index.ts` (cached server reads, all scoped by the signed-in user);
+  `src/lib/data/admin.ts` is the one place that intentionally reads across all users — never import it
+  into user-facing pages
+- Payments: `src/lib/actions/payments.ts`, `src/lib/korapay.ts`. Deposits, share purchases and withdrawal
+  *requests* are all live. Payout itself is manual — see Admin below.
+
+## Admin (`/admin`)
+
+Gated by `profiles.is_admin` (`requireAdmin()` in `src/lib/data/admin.ts`), checked server-side on every
+admin page — there's no client-side-only gate to bypass. Grant it with `scripts/set-admin.mjs`.
+
+- **Overview** — totals: users, deposits completed, deposits pending, withdrawals awaiting payout, share
+  purchases.
+- **Deposits** / **Purchases** — read-only history across all users.
+- **Withdrawals** — every request with the user's bank details (account name/number, bank). Pending ones
+  get **Mark Paid** and **Reject** buttons:
+  - **Mark Paid**: flips the withdrawal + its transaction to `completed`. It does **not** move any money —
+    pay the user from your own bank or Korapay dashboard first, then mark it here.
+  - **Reject**: flips both to `failed` and refunds the held amount back to the user's balance.
+
+The balance is held (debited) the moment a user **requests** a withdrawal, not when it's paid out — so a
+user can never request more than they have or double-spend a pending request across two withdrawals.
 
 ## Payments (Korapay)
 
@@ -42,8 +64,8 @@ balance, inserts the holding, and inserts the transaction in one DB transaction
 (`src/lib/db.ts:withTransaction`), so a purchase can't charge without recording it or vice versa. It
 fails cleanly on insufficient balance.
 
-Withdrawals still show "coming soon" — there is no payout provider connected. Flip `WITHDRAWALS_ENABLED`
-in `src/lib/config.ts` once one is.
+Withdrawal *requests* are real (see Admin below for payout); `WITHDRAWALS_ENABLED` in `src/lib/config.ts`
+is a kill switch to pause new requests without a code change if needed.
 
 `KORAPAY_PUBLIC_KEY` and `KORAPAY_ENCRYPTION_KEY` are captured in `.env.local` but unused — they're only
 needed for an inline widget or direct card charges, neither implemented here.

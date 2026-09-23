@@ -10,6 +10,7 @@ export interface Profile {
   phone: string | null;
   avatar_url: string | null;
   account_status: "active" | "suspended" | "pending";
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -69,3 +70,35 @@ export interface WelcomeBonus {
   claimed_at: string | null;
   created_at: string;
 }
+
+export interface Withdrawal {
+  id: string;
+  user_id: string;
+  amount: number;
+  status: TxStatus;
+  bank_name: string | null;
+  account_number: string | null;
+  account_name: string | null;
+  created_at: string;
+  processed_at: string | null;
+}
+
+/** Admin views: a row flattened with who it belongs to. */
+export type AdminDeposit = {
+  id: string;
+  amount: number;
+  status: TxStatus;
+  payment_method: string | null;
+  created_at: string;
+  full_name: string | null;
+  phone: string | null;
+};
+export type AdminPurchase = {
+  id: string;
+  amount: number;
+  description: string | null;
+  created_at: string;
+  full_name: string | null;
+  phone: string | null;
+};
+export type AdminWithdrawal = Withdrawal & { full_name: string | null; phone: string | null };

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, ShieldCheck } from "lucide-react";
 import { Logo, LogoMark } from "@/components/brand/logo";
 import { useModals } from "@/components/modals/modals-provider";
 import { signOut } from "@/lib/actions/auth";
@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { sidebarNav, type NavItem } from "./nav";
 
 /** Rail (icons only) on tablet, full sidebar on desktop, hidden on mobile. */
-export function Sidebar() {
+export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const { openDeposit, openWithdraw } = useModals();
 
@@ -63,6 +63,12 @@ export function Sidebar() {
       </nav>
 
       <div className="flex flex-col gap-1 border-t border-white/10 pt-3">
+        {isAdmin && (
+          <Link href="/admin" title="Admin" className={itemClass(pathname.startsWith("/admin"))}>
+            <ShieldCheck className="size-[18px]" />
+            <span className="md:hidden lg:inline">Admin</span>
+          </Link>
+        )}
         <Link href="/settings" title="Settings" className={itemClass(pathname.startsWith("/settings"))}>
           <Settings className="size-[18px]" />
           <span className="md:hidden lg:inline">Settings</span>

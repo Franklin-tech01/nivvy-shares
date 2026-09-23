@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <ModalsProvider>
       <div className="flex min-h-dvh">
-        <Sidebar />
+        <Sidebar isAdmin={profile?.is_admin ?? false} />
         <div className="flex min-w-0 flex-1 flex-col">
           <MobileHeader name={profile?.full_name ?? null} email={realEmail(user.email)} />
           {/* bottom padding clears the fixed mobile nav */}

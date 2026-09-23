@@ -6,7 +6,7 @@ import { query, withTransaction } from "@/lib/db";
 import { getCurrentUser } from "@/lib/data";
 import { initializeCharge } from "@/lib/korapay";
 import { realEmail } from "@/lib/phone";
-import { MIN_DEPOSIT_AMOUNT } from "@/lib/config";
+import { MIN_DEPOSIT_AMOUNT, WITHDRAWALS_ENABLED } from "@/lib/config";
 import { formatMoney } from "@/lib/utils";
 
 export type PaymentResult =
@@ -126,12 +126,57 @@ export async function purchaseShare(input: { shareId: string; quantity: number }
   return { ok: true };
 }
 
-/* eslint-disable @typescript-eslint/no-unused-vars -- inert seam, input used once a payout provider is wired */
-/** No payout provider is connected yet, so withdrawals cannot be processed. */
-export async function requestWithdrawal(_input: {
+/**
+ * Requests a withdrawal. There is no payout API — an admin pays out manually
+ * and marks it done (see `src/lib/actions/admin.ts`). The balance is debited
+ * immediately (atomically, like a hold) so a user can't request more than
+ * they have or double-spend the same balance across two pending requests.
+ * If an admin rejects the request, the amount is refunded.
+ */
+export async function requestWithdrawal(input: {
   amount: number;
-  method: string;
-  destination: string;
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
 }): Promise<PaymentResult> {
-  return { ok: false, error: "Withdrawal processing will be available soon." };
+  if (!WITHDRAWALS_ENABLED) return { ok: false, error: "Withdrawals are temporarily paused." };
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "You are signed out." };
+  if (!(input.amount > 0)) return { ok: false, error: "Enter a valid amount." };
+
+  try {
+    const debited = await withTransaction(async (q) => {
+      const updated = await q(
+        "update portfolios set balance = balance - $1 where user_id = $2 and balance >= $1 returning user_id",
+        [input.amount, user.id],
+      );
+      if (updated.length === 0) return false;
+
+      const [withdrawal] = await q<{ id: string }>(
+        `insert into withdrawals (user_id, amount, status, bank_name, account_number, account_name)
+         values ($1, $2, 'pending', $3, $4, $5) returning id`,
+        [user.id, input.amount, input.bankName, input.accountNumber, input.accountName],
+      );
+      await q(
+        `insert into transactions (user_id, type, amount, status, description, metadata)
+         values ($1, 'withdrawal', $2, 'pending', $3, $4)`,
+        [
+          user.id,
+          input.amount,
+          `Withdrawal to ${input.bankName} •••${input.accountNumber.slice(-4)}`,
+          JSON.stringify({ withdrawal_id: withdrawal.id }),
+        ],
+      );
+      return true;
+    });
+
+    if (!debited) return { ok: false, error: "Insufficient balance." };
+  } catch (e) {
+    console.error("[withdrawal]", e);
+    return { ok: false, error: "Could not submit the withdrawal. Please try again." };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/transactions");
+  return { ok: true };
 }

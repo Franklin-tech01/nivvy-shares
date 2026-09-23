@@ -54,6 +54,10 @@ export const depositSchema = z.object({
 
 export const withdrawSchema = z.object({
   amount,
-  method: z.string().min(1, "Choose a withdrawal method"),
-  destination: z.string().trim().min(3, "Enter your account details"),
+  accountName: z.string().trim().min(2, "Enter the account name"),
+  accountNumber: z
+    .string()
+    .trim()
+    .regex(/^\d{10}$/, "Enter a valid 10-digit account number"),
+  bankName: z.string().trim().min(2, "Enter the bank name"),
 });

@@ -1,13 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { ArrowUpFromLine, Info } from "lucide-react";
+import { ArrowUpFromLine, Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { withdrawSchema } from "@/lib/schemas";
 import { requestWithdrawal } from "@/lib/actions/payments";
@@ -22,19 +23,29 @@ export function WithdrawModal({
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(withdrawSchema), defaultValues: { method: "" } });
+  } = useForm<Values>({ resolver: zodResolver(withdrawSchema) });
 
   async function onSubmit(v: Values) {
     const res = await requestWithdrawal({
       amount: Number(v.amount),
-      method: v.method,
-      destination: v.destination,
+      accountName: v.accountName,
+      accountNumber: v.accountNumber,
+      bankName: v.bankName,
     });
-    if (!res.ok) toast.info("Withdrawal processing will be available soon. Nothing was submitted.");
+    if (res.ok) {
+      toast.success("Withdrawal request submitted. It will be reviewed and paid out manually.");
+      reset();
+      onOpenChange(false);
+      router.refresh();
+    } else {
+      toast.error(res.error);
+    }
   }
 
   return (
@@ -51,26 +62,36 @@ export function WithdrawModal({
               {...register("amount")}
             />
           </Field>
-          <Field label="Withdrawal method" htmlFor="wd-method" error={errors.method?.message}>
-            <Select id="wd-method" {...register("method")}>
-              <option value="">Select a method</option>
-              <option value="bank_transfer">Bank transfer</option>
-            </Select>
+          <Field label="Bank name" htmlFor="wd-bank" error={errors.bankName?.message}>
+            <Input id="wd-bank" placeholder="e.g. GTBank" aria-invalid={!!errors.bankName} {...register("bankName")} />
           </Field>
-          <Field label="Account details" htmlFor="wd-dest" error={errors.destination?.message}>
+          <Field label="Account number" htmlFor="wd-acct-no" error={errors.accountNumber?.message}>
             <Input
-              id="wd-dest"
-              placeholder="Bank name and account number"
-              aria-invalid={!!errors.destination}
-              {...register("destination")}
+              id="wd-acct-no"
+              inputMode="numeric"
+              placeholder="0123456789"
+              aria-invalid={!!errors.accountNumber}
+              {...register("accountNumber")}
             />
           </Field>
-          <div className="flex gap-2.5 rounded-md bg-primary-soft p-3 text-sm text-warning">
+          <Field label="Account name" htmlFor="wd-acct-name" error={errors.accountName?.message}>
+            <Input
+              id="wd-acct-name"
+              placeholder="Name on the account"
+              aria-invalid={!!errors.accountName}
+              {...register("accountName")}
+            />
+          </Field>
+          <div className="flex gap-2.5 rounded-md bg-muted p-3 text-sm text-muted-foreground">
             <Info className="mt-0.5 size-4 shrink-0" />
-            <p>Withdrawal processing will be available soon.</p>
+            <p>
+              The amount is held from your balance immediately. Withdrawals are reviewed and paid out
+              manually, and can take up to a few business days.
+            </p>
           </div>
           <Button type="submit" className="w-full" disabled={isSubmitting || !WITHDRAWALS_ENABLED}>
-            <ArrowUpFromLine /> Continue
+            {isSubmitting ? <Loader2 className="animate-spin" /> : <ArrowUpFromLine />}
+            {WITHDRAWALS_ENABLED ? "Request Withdrawal" : "Withdrawals paused"}
           </Button>
         </form>
       </DialogContent>
