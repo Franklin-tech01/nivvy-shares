@@ -21,15 +21,16 @@ import { firstName } from "@/lib/utils";
 export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
-	const [user, profile, portfolio, holdings, reward, bonus] =
-		await Promise.all([
+	const [user, profile, portfolio, holdings, reward, bonus] = await Promise.all(
+		[
 			getCurrentUser(),
 			getProfile(),
 			getPortfolio(),
 			getHoldings(),
 			getLoginReward(),
 			getWelcomeBonus(),
-		]);
+		],
+	);
 
 	const sharesOwned = holdings.data.reduce((n, h) => n + h.quantity, 0);
 	const errors = [profile, portfolio, holdings, reward, bonus]
@@ -58,7 +59,7 @@ export default async function DashboardPage() {
 
 			<div className='grid gap-4 lg:grid-cols-2'>
 				<WelcomeBonusCard bonus={bonus.data} />
-				<DailyLoginCard reward={reward.data} />
+				<DailyLoginCard />
 			</div>
 		</div>
 	);
