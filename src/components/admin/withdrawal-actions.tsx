@@ -1,19 +1,51 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Loader2, X } from "lucide-react";
+import { Banknote, Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { markWithdrawalPaid, rejectWithdrawal } from "@/lib/actions/admin";
+import { markWithdrawalPaid, payoutViaOtpay, rejectWithdrawal } from "@/lib/actions/admin";
 import { formatMoney } from "@/lib/utils";
 
-export function WithdrawalActions({ id, amount, name }: { id: string; amount: number; name: string }) {
+export function WithdrawalActions({
+  id,
+  amount,
+  name,
+  hasBankCode,
+  locked,
+}: {
+  id: string;
+  amount: number;
+  name: string;
+  hasBankCode: boolean;
+  locked: boolean;
+}) {
   const [pending, startTransition] = useTransition();
-  const [busyAction, setBusyAction] = useState<"pay" | "reject" | null>(null);
+  const [busyAction, setBusyAction] = useState<"otpay" | "manual" | "reject" | null>(null);
 
-  function pay() {
-    if (!window.confirm(`Mark ${formatMoney(amount)} to ${name} as paid?\n\nOnly do this after you have actually sent the money.`)) return;
-    setBusyAction("pay");
+  function payViaOtpay() {
+    if (
+      !window.confirm(
+        `Pay ${formatMoney(amount)} to ${name} via OTPay right now?\n\nThis sends real money immediately and cannot be undone.`,
+      )
+    )
+      return;
+    setBusyAction("otpay");
+    startTransition(async () => {
+      const res = await payoutViaOtpay(id);
+      if (res.ok) toast.success("Paid via OTPay.");
+      else toast.error(res.error, { duration: 10000 });
+    });
+  }
+
+  function payManually() {
+    if (
+      !window.confirm(
+        `Mark ${formatMoney(amount)} to ${name} as paid?\n\nOnly do this after you have actually sent the money yourself.`,
+      )
+    )
+      return;
+    setBusyAction("manual");
     startTransition(async () => {
       const res = await markWithdrawalPaid(id);
       if (res.ok) toast.success("Marked as paid.");
@@ -31,14 +63,23 @@ export function WithdrawalActions({ id, amount, name }: { id: string; amount: nu
     });
   }
 
+  if (locked) {
+    return <p className="text-right text-xs font-medium text-warning">Payout in progress — refresh shortly</p>;
+  }
+
   return (
-    <div className="flex justify-end gap-2">
+    <div className="flex flex-wrap justify-end gap-2">
       <Button size="sm" variant="outline" onClick={reject} disabled={pending}>
         {pending && busyAction === "reject" ? <Loader2 className="animate-spin" /> : <X />} Reject
       </Button>
-      <Button size="sm" onClick={pay} disabled={pending}>
-        {pending && busyAction === "pay" ? <Loader2 className="animate-spin" /> : <Check />} Mark Paid
+      <Button size="sm" variant="outline" onClick={payManually} disabled={pending}>
+        {pending && busyAction === "manual" ? <Loader2 className="animate-spin" /> : <Check />} Mark Paid
       </Button>
+      {hasBankCode && (
+        <Button size="sm" onClick={payViaOtpay} disabled={pending}>
+          {pending && busyAction === "otpay" ? <Loader2 className="animate-spin" /> : <Banknote />} Pay via OTPay
+        </Button>
+      )}
     </div>
   );
 }

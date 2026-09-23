@@ -60,11 +60,20 @@ export default async function AdminWithdrawalsPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{formatDate(w.created_at, true)}</td>
                     <td className="px-4 py-3">
                       {w.status === "pending" ? (
-                        <WithdrawalActions id={w.id} amount={w.amount} name={w.full_name ?? "this user"} />
+                        <WithdrawalActions
+                          id={w.id}
+                          amount={w.amount}
+                          name={w.full_name ?? "this user"}
+                          hasBankCode={!!w.bank_code}
+                          locked={w.locked}
+                        />
                       ) : (
-                        <p className="text-right text-xs text-muted-foreground">
-                          {w.status === "completed" ? "Paid" : "Rejected"} {formatDate(w.processed_at, true)}
-                        </p>
+                        <div className="text-right text-xs text-muted-foreground">
+                          <p>
+                            {w.status === "completed" ? "Paid" : "Rejected"} {formatDate(w.processed_at, true)}
+                          </p>
+                          {w.payout_reference && <p className="font-mono">{w.payout_reference}</p>}
+                        </div>
                       )}
                     </td>
                   </tr>

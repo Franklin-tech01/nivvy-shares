@@ -88,10 +88,12 @@ export const getAdminPurchases = cache(async (limit = 200): Promise<AdminPurchas
   );
 });
 
-export const getAdminWithdrawals = cache(async (limit = 200): Promise<AdminWithdrawal[]> => {
-  return query<AdminWithdrawal>(
-    `select w.id, w.user_id, w.amount, w.status, w.bank_name, w.account_number, w.account_name,
-            w.created_at, w.processed_at, p.full_name, p.phone
+export const getAdminWithdrawals = cache(async (limit = 200): Promise<(AdminWithdrawal & { locked: boolean })[]> => {
+  return query<AdminWithdrawal & { locked: boolean }>(
+    `select w.id, w.user_id, w.amount, w.status, w.bank_name, w.bank_code, w.account_number, w.account_name,
+            w.payout_reference, w.payout_fee, w.created_at, w.processed_at,
+            (w.locked_at is not null and w.locked_at > now() - interval '2 minutes') as locked,
+            p.full_name, p.phone
        from withdrawals w join profiles p on p.id = w.user_id
       order by (w.status = 'pending') desc, w.created_at desc
       limit $1`,

@@ -77,8 +77,11 @@ export interface Withdrawal {
   amount: number;
   status: TxStatus;
   bank_name: string | null;
+  bank_code: string | null;
   account_number: string | null;
   account_name: string | null;
+  payout_reference: string | null;
+  payout_fee: number | null;
   created_at: string;
   processed_at: string | null;
 }

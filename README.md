@@ -14,9 +14,11 @@ No landing page: `/` sends signed-out users to `/login`, signed-in users to `/da
 5. Optional demo data for one account: edit the phone number in `db/seed_demo_user.sql` and run
    `node --env-file=.env.local scripts/db-apply.mjs db/seed_demo_user.sql`. Rows are marked `[Demo]`.
 6. Set `KORAPAY_SECRET_KEY` (deposits won't work without it — see below).
-7. Grant yourself admin access: `node --env-file=.env.local scripts/set-admin.mjs +2348012345678`
+7. Set `OTPAY_API_KEY`, `OTPAY_SECRET_KEY`, `OTPAY_BUSINESS_CODE` (needed for the withdraw form's bank list
+   and account verification, and for the admin payout button — see below).
+8. Grant yourself admin access: `node --env-file=.env.local scripts/set-admin.mjs +2348012345678`
    (use the phone number you registered with). Revoke with `--revoke`.
-8. `npm run dev`
+9. `npm run dev`
 
 ## Where things live
 
@@ -27,8 +29,8 @@ No landing page: `/` sends signed-out users to `/login`, signed-in users to `/da
 - Data access: `src/lib/data/index.ts` (cached server reads, all scoped by the signed-in user);
   `src/lib/data/admin.ts` is the one place that intentionally reads across all users — never import it
   into user-facing pages
-- Payments: `src/lib/actions/payments.ts`, `src/lib/korapay.ts`. Deposits, share purchases and withdrawal
-  *requests* are all live. Payout itself is manual — see Admin below.
+- Payments: `src/lib/actions/payments.ts`, `src/lib/korapay.ts` (deposits in), `src/lib/otpay.ts`
+  (withdrawal payouts out). Deposits, share purchases, withdrawal requests and payout are all live.
 
 ## Admin (`/admin`)
 
@@ -38,14 +40,27 @@ admin page — there's no client-side-only gate to bypass. Grant it with `script
 - **Overview** — totals: users, deposits completed, deposits pending, withdrawals awaiting payout, share
   purchases.
 - **Deposits** / **Purchases** — read-only history across all users.
-- **Withdrawals** — every request with the user's bank details (account name/number, bank). Pending ones
-  get **Mark Paid** and **Reject** buttons:
-  - **Mark Paid**: flips the withdrawal + its transaction to `completed`. It does **not** move any money —
-    pay the user from your own bank or Korapay dashboard first, then mark it here.
-  - **Reject**: flips both to `failed` and refunds the held amount back to the user's balance.
+- **Withdrawals** — every request with the user's bank details (verified account name, account number,
+  bank). Pending ones get up to three buttons:
+  - **Pay via OTPay**: calls OTPay's real payout API for this exact amount/account, then marks the
+    withdrawal `completed` with the returned reference and fee. Only shown when the request has a
+    `bank_code` on file. **This moves real money immediately and cannot be undone** — the button has a
+    confirm dialog for that reason.
+  - **Mark Paid**: flips status to `completed` without calling OTPay. Use this only after paying the user
+    yourself some other way (e.g. your own bank transfer) — it moves no money itself.
+  - **Reject**: flips status to `failed` and refunds the held amount back to the user's balance.
 
 The balance is held (debited) the moment a user **requests** a withdrawal, not when it's paid out — so a
 user can never request more than they have or double-spend a pending request across two withdrawals.
+
+**Double-payout protection**: OTPay's payout API accepts no idempotency key, so nothing about the request
+itself protects against calling it twice for the same withdrawal. Instead, `payoutViaOtpay` claims a
+short-lived lock (`withdrawals.locked_at`) *before* calling OTPay at all; a second click or a second admin
+sees it locked and is refused immediately, without OTPay ever being called twice. If OTPay's response is
+unreadable or the request times out — a genuinely unknown outcome, not a confirmed failure — the lock is
+deliberately left in place rather than cleared, and the admin is told to check OTPay's own dashboard before
+touching that withdrawal again. The lock expires after 2 minutes as a last resort, not as an invitation to
+retry blindly. `markWithdrawalPaid` and `rejectWithdrawal` also refuse to run while a withdrawal is locked.
 
 ## Payments (Korapay)
 

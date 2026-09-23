@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { query, withTransaction } from "@/lib/db";
 import { getCurrentUser } from "@/lib/data";
 import { initializeCharge } from "@/lib/korapay";
+import { getBanks, verifyBankAccount, type Bank } from "@/lib/otpay";
 import { realEmail } from "@/lib/phone";
 import { MIN_DEPOSIT_AMOUNT, WITHDRAWALS_ENABLED } from "@/lib/config";
 import { formatMoney } from "@/lib/utils";
@@ -126,23 +127,62 @@ export async function purchaseShare(input: { shareId: string; quantity: number }
   return { ok: true };
 }
 
+export type BankListResult = { ok: true; banks: Bank[] } | { ok: false; error: string };
+
+/** Feeds the bank dropdown in the withdraw form. OTPay credentials are server-only. */
+export async function getWithdrawalBanks(): Promise<BankListResult> {
+  try {
+    return { ok: true, banks: await getBanks() };
+  } catch (e) {
+    console.error("[banks]", e);
+    return { ok: false, error: "Could not load the bank list. Please try again." };
+  }
+}
+
+export type VerifyAccountResult = { ok: true; accountName: string; bankName: string } | { ok: false; error: string };
+
 /**
- * Requests a withdrawal. There is no payout API — an admin pays out manually
- * and marks it done (see `src/lib/actions/admin.ts`). The balance is debited
- * immediately (atomically, like a hold) so a user can't request more than
- * they have or double-spend the same balance across two pending requests.
- * If an admin rejects the request, the amount is refunded.
+ * Resolves an account number to its registered name via OTPay before a
+ * withdrawal is submitted, so a user sees whose account they're paying into
+ * and can't type an arbitrary name. `requestWithdrawal` re-verifies
+ * server-side regardless — this is only for the form's live feedback.
+ */
+export async function verifyWithdrawalAccount(input: {
+  bankCode: string;
+  accountNumber: string;
+}): Promise<VerifyAccountResult> {
+  try {
+    const v = await verifyBankAccount(input.accountNumber, input.bankCode);
+    return { ok: true, accountName: v.accountName, bankName: v.bankName };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not verify this account." };
+  }
+}
+
+/**
+ * Requests a withdrawal. The account is verified with OTPay first (the
+ * resolved name is authoritative — never the client's word for it), then the
+ * balance is debited immediately (atomically, like a hold), so a user can't
+ * request more than they have or double-spend the same balance across two
+ * pending requests. An admin pays it out and marks it done, or rejects it,
+ * which refunds the hold (see `src/lib/actions/admin.ts`).
  */
 export async function requestWithdrawal(input: {
   amount: number;
-  accountName: string;
+  bankCode: string;
   accountNumber: string;
-  bankName: string;
 }): Promise<PaymentResult> {
   if (!WITHDRAWALS_ENABLED) return { ok: false, error: "Withdrawals are temporarily paused." };
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "You are signed out." };
   if (!(input.amount > 0)) return { ok: false, error: "Enter a valid amount." };
+
+  let verified;
+  try {
+    verified = await verifyBankAccount(input.accountNumber, input.bankCode);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not verify this bank account." };
+  }
 
   try {
     const debited = await withTransaction(async (q) => {
@@ -153,9 +193,9 @@ export async function requestWithdrawal(input: {
       if (updated.length === 0) return false;
 
       const [withdrawal] = await q<{ id: string }>(
-        `insert into withdrawals (user_id, amount, status, bank_name, account_number, account_name)
-         values ($1, $2, 'pending', $3, $4, $5) returning id`,
-        [user.id, input.amount, input.bankName, input.accountNumber, input.accountName],
+        `insert into withdrawals (user_id, amount, status, bank_name, bank_code, account_number, account_name)
+         values ($1, $2, 'pending', $3, $4, $5, $6) returning id`,
+        [user.id, input.amount, verified.bankName, input.bankCode, input.accountNumber, verified.accountName],
       );
       await q(
         `insert into transactions (user_id, type, amount, status, description, metadata)
@@ -163,7 +203,7 @@ export async function requestWithdrawal(input: {
         [
           user.id,
           input.amount,
-          `Withdrawal to ${input.bankName} •••${input.accountNumber.slice(-4)}`,
+          `Withdrawal to ${verified.bankName} •••${input.accountNumber.slice(-4)}`,
           JSON.stringify({ withdrawal_id: withdrawal.id }),
         ],
       );
