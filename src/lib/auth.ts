@@ -15,8 +15,15 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
-    // Accounts are identified by phone number (see `@/lib/phone`). Self-service
-    // reset needs an SMS provider; until then resets go through support.
+    // Accounts are identified by phone number (see `@/lib/phone`), and there's
+    // no SMS/email provider connected, so nothing is actually delivered to the
+    // user — this callback exists only because Better Auth disables the whole
+    // reset-password API when it's absent. Support/admin can still complete a
+    // reset by reading the token straight out of the `verification` table for
+    // this identifier and calling POST /api/auth/reset-password with it.
+    sendResetPassword: async ({ user, url, token }) => {
+      console.log(`[auth] password reset requested for ${user.email} — token: ${token} — url: ${url}`);
+    },
   },
   plugins: [nextCookies()], // must stay last
 });
