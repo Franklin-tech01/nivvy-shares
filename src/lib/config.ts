@@ -1,10 +1,14 @@
 /**
- * Central app configuration. External links come from env vars so they can be
- * changed per environment without touching components.
+ * Central app configuration. External links can be overridden per environment
+ * with env vars without touching components. The Telegram community links are
+ * public invite links (not secrets), so they're the defaults; `||` (not `??`)
+ * so an env var set to an empty string still falls back to them.
  */
 export const links = {
-  communityGroup: process.env.NEXT_PUBLIC_COMMUNITY_GROUP_URL ?? "",
-  communityChannel: process.env.NEXT_PUBLIC_COMMUNITY_CHANNEL_URL ?? "",
+  communityGroup:
+    process.env.NEXT_PUBLIC_COMMUNITY_GROUP_URL || "https://t.me/+9BGUvcCUo-4xZmJk",
+  communityChannel:
+    process.env.NEXT_PUBLIC_COMMUNITY_CHANNEL_URL || "https://t.me/+pgJpPYRODtswNzQ0",
   whatsapp: process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_URL ?? "",
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "",
 };
