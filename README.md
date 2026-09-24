@@ -93,3 +93,18 @@ Neon has no per-user RLS, so authorization lives in server code:
 - Every user-owned query filters by the authenticated user id; `requireUser()` validates the session in the app layout.
 - Users can only edit their `full_name` (the phone number is their login). Balances, transactions, bonuses and status are never writable from the browser.
 - Phone login: Better Auth needs an email, so a phone maps to an internal `<digits>@phone.nivvyusers.com` address (`src/lib/phone.ts`) that is never sent mail — it only satisfies email-shaped fields (Better Auth, Korapay's `customer.email`). It intentionally isn't on a reserved TLD like `.invalid`: Korapay's own email validator rejects those. Numbers are normalized (default country code +234). Self-service password reset needs an SMS provider (not connected); until then support resets passwords and `/forgot-password` points to support.
+
+## Promotional bonuses
+
+A ₦700 welcome bonus (once, on first login) and a ₦200 daily login bonus (once per UTC day) are credited by
+`recordLogin` in `src/lib/actions/account.ts`. Amounts and the `BONUSES_ENABLED` kill switch live in
+`src/lib/config.ts`. They're paid from the **operator's own funds** — never from user deposits — so keep the
+OTPay payout wallet funded separately.
+
+- Credited money goes into the normal `balance` and is also counted in `portfolios.locked_bonus`. Withdrawable
+  = `balance - locked_bonus`, so a user's **own deposits are never locked**, only bonus money. The user's first
+  completed share purchase sets `locked_bonus` to 0.
+- Each credit is claimed with a guarded UPDATE inside one DB transaction, so repeat calls / two tabs / races
+  credit nothing twice. The client sends no amounts.
+- `/admin` shows **Bonuses credited** (total promo spend) and **Bonus money still locked**.
+- Nothing about a balance is stored in the browser.

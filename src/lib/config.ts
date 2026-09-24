@@ -14,13 +14,14 @@ export const links = {
 };
 
 /**
- * Daily login reward display values for day 1..7 (in NGN).
- * Left null until the real amounts are decided. This is display-only:
- * nothing is credited to any balance in this phase.
+ * Promotional bonuses (NGN), paid from the operator's own funds — not from
+ * user deposits. Credited to the balance on the server, but locked until the
+ * user's first share purchase (see migration 0006). BONUSES_ENABLED is the
+ * kill switch: false stops all new bonus credits immediately.
  */
-export const DAILY_REWARD_AMOUNTS: (number | null)[] = [
-  null, null, null, null, null, null, null,
-];
+export const BONUSES_ENABLED = true;
+export const WELCOME_BONUS_AMOUNT = 700;
+export const DAILY_LOGIN_BONUS = 200;
 
 export const COMMUNITY_POPUP_STORAGE_KEY = "nivvy:community-popup-dismissed";
 

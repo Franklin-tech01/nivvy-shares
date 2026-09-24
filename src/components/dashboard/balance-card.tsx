@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowDownToLine, ArrowUpFromLine, Wallet } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Lock, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useModals } from "@/components/modals/modals-provider";
 import { formatMoney } from "@/lib/utils";
 
-export function BalanceCard({ balance }: { balance: number }) {
+export function BalanceCard({ balance, lockedBonus = 0 }: { balance: number; lockedBonus?: number }) {
 	const { openDeposit, openWithdraw } = useModals();
 	return (
 		<div className='relative overflow-hidden rounded-lg bg-navy p-6 text-navy-foreground shadow-card'>
@@ -24,6 +24,15 @@ export function BalanceCard({ balance }: { balance: number }) {
 				{formatMoney(balance)}
 			</p>
 			<p className='mt-1 text-xs text-navy-muted'>Available balance</p>
+			{lockedBonus > 0 && (
+				<p className='mt-3 flex items-start gap-1.5 text-xs text-navy-muted'>
+					<Lock className='mt-0.5 size-3 shrink-0 text-primary' />
+					<span>
+						Includes {formatMoney(lockedBonus)} in bonus money. It can be
+						withdrawn after your first share purchase.
+					</span>
+				</p>
+			)}
 			<div className='relative mt-6 grid grid-cols-2 gap-3 sm:max-w-xs'>
 				<Button onClick={openDeposit}>
 					<ArrowDownToLine /> Deposit

@@ -1,31 +1,30 @@
-"use client";
-
 import { Check, Gift } from "lucide-react";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { BONUSES_ENABLED, WELCOME_BONUS_AMOUNT } from "@/lib/config";
 import { cn, formatDate, formatMoney } from "@/lib/utils";
 import type { WelcomeBonus } from "@/lib/types";
 
-const steps = ["Joined", "Available", "Claimed"] as const;
-const stepIndex: Record<WelcomeBonus["status"], number> = {
-  pending: 0,
-  available: 1,
-  claimed: 2,
-  expired: 0,
-};
-const statusMeta: Record<WelcomeBonus["status"], { label: string; tone: "warning" | "brand" | "success" | "danger" }> = {
-  pending: { label: "Pending", tone: "warning" },
-  available: { label: "Ready to claim", tone: "brand" },
-  claimed: { label: "Claimed", tone: "success" },
-  expired: { label: "Expired", tone: "danger" },
-};
+const steps = ["Joined", "Credited", "Withdrawable"] as const;
 
-export function WelcomeBonusCard({ bonus }: { bonus: WelcomeBonus | null }) {
+/** The welcome bonus is credited automatically on the first login; this card just reports its state. */
+export function WelcomeBonusCard({
+  bonus,
+  hasPurchased = false,
+}: {
+  bonus: WelcomeBonus | null;
+  /** True once the user has completed a share purchase, which unlocks bonus money. */
+  hasPurchased?: boolean;
+}) {
   if (!bonus) return null;
-  const meta = statusMeta[bonus.status];
-  const current = stepIndex[bonus.status];
+  const claimed = bonus.status === "claimed";
+  // 0 = joined, 1 = credited (locked), 2 = withdrawable
+  const current = claimed ? (hasPurchased ? 2 : 1) : 0;
+  const badge = !claimed
+    ? { label: BONUSES_ENABLED ? "On first login" : "Paused", tone: "warning" as const }
+    : hasPurchased
+      ? { label: "Withdrawable", tone: "success" as const }
+      : { label: "Credited", tone: "brand" as const };
 
   return (
     <Card className="overflow-hidden">
@@ -39,13 +38,13 @@ export function WelcomeBonusCard({ bonus }: { bonus: WelcomeBonus | null }) {
             <p className="text-sm text-muted-foreground">Get rewarded for joining Nivvy.</p>
           </div>
         </div>
-        <Badge tone={meta.tone}>{meta.label}</Badge>
+        <Badge tone={badge.tone}>{badge.label}</Badge>
       </div>
 
       <div className="px-5">
         <p className="text-xs text-muted-foreground">Bonus amount</p>
         <p className="tabular font-display text-3xl font-semibold">
-          {bonus.amount > 0 ? formatMoney(bonus.amount) : "To be announced"}
+          {formatMoney(claimed && bonus.amount > 0 ? bonus.amount : WELCOME_BONUS_AMOUNT)}
         </p>
       </div>
 
@@ -60,15 +59,14 @@ export function WelcomeBonusCard({ bonus }: { bonus: WelcomeBonus | null }) {
         ))}
       </ol>
 
-      <div className="mt-5 flex items-center justify-between gap-3 border-t bg-muted/40 px-5 py-3">
+      <div className="mt-5 border-t bg-muted/40 px-5 py-3">
         <p className="text-xs text-muted-foreground">
-          {bonus.status === "claimed" ? `Claimed ${formatDate(bonus.claimed_at)}` : "Crediting is not enabled yet."}
+          {!claimed
+            ? "Credited to your balance automatically when you first log in."
+            : hasPurchased
+              ? `Credited ${formatDate(bonus.claimed_at)}. You can withdraw it.`
+              : `Credited ${formatDate(bonus.claimed_at)}. Withdrawable after your first share purchase.`}
         </p>
-        {bonus.status === "available" && (
-          <Button size="sm" onClick={() => toast.info("Bonus claiming will open soon. Nothing was credited.")}>
-            Claim
-          </Button>
-        )}
       </div>
     </Card>
   );

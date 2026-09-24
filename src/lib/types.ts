@@ -33,6 +33,8 @@ export interface Portfolio {
   id: string;
   user_id: string;
   balance: number;
+  /** Part of `balance` that is promotional bonus money, not withdrawable until the first share purchase. */
+  locked_bonus: number;
   total_investment: number;
   total_value: number;
 }
@@ -60,6 +62,7 @@ export interface LoginReward {
   id: string;
   current_streak: number;
   last_login_date: string | null;
+  rewarded_on: string | null;
   total_rewards: number;
 }
 

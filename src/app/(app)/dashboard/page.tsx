@@ -45,7 +45,10 @@ export default async function DashboardPage() {
 			{errors.length > 0 && <ErrorNotice message={errors[0]} />}
 
 			<div className='grid gap-4 lg:grid-cols-[1.4fr_1fr]'>
-				<BalanceCard balance={portfolio.data?.balance ?? 0} />
+				<BalanceCard
+					balance={portfolio.data?.balance ?? 0}
+					lockedBonus={portfolio.data?.locked_bonus ?? 0}
+				/>
 				<PortfolioCard
 					totalInvestment={portfolio.data?.total_investment ?? 0}
 					sharesOwned={sharesOwned}
@@ -58,8 +61,8 @@ export default async function DashboardPage() {
 			<HoldingsCard holdings={holdings.data} />
 
 			<div className='grid gap-4 lg:grid-cols-2'>
-				<WelcomeBonusCard bonus={bonus.data} />
-				<DailyLoginCard />
+				<WelcomeBonusCard bonus={bonus.data} hasPurchased={holdings.data.length > 0} />
+				<DailyLoginCard reward={reward.data} />
 			</div>
 		</div>
 	);

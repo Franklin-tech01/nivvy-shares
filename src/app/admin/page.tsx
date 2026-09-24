@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowDownToLine, ArrowUpFromLine, ShoppingBag, Users } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Gift, Lock, ShoppingBag, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { getAdminOverview } from "@/lib/data/admin";
 import { formatMoney } from "@/lib/utils";
@@ -24,6 +24,18 @@ export default async function AdminOverviewPage() {
       value: formatMoney(o.purchasesTotal),
       hint: `${o.purchasesCount} purchase${o.purchasesCount === 1 ? "" : "s"}`,
       icon: ShoppingBag,
+    },
+    {
+      label: "Bonuses credited",
+      value: formatMoney(o.bonusesCredited),
+      hint: "Promo spend so far (welcome + daily login)",
+      icon: Gift,
+    },
+    {
+      label: "Bonus money still locked",
+      value: formatMoney(o.bonusesLocked),
+      hint: "Becomes withdrawable after each user's first purchase",
+      icon: Lock,
     },
   ];
 

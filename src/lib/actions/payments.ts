@@ -96,8 +96,10 @@ export async function purchaseShare(input: { shareId: string; quantity: number }
       // Debit only if the balance covers it; the WHERE guard makes this
       // check-and-debit atomic even under concurrent purchases.
       const updated = await q(
+        // locked_bonus = 0: a first purchase unlocks promotional bonus money.
         `update portfolios
-            set balance = balance - $1, total_investment = total_investment + $1, total_value = total_value + $1
+            set balance = balance - $1, total_investment = total_investment + $1, total_value = total_value + $1,
+                locked_bonus = 0
           where user_id = $2 and balance >= $1
           returning user_id`,
         [total, user.id],
@@ -189,12 +191,18 @@ export async function requestWithdrawal(input: {
   }
 
   try {
-    const debited = await withTransaction(async (q) => {
+    const outcome = await withTransaction(async (q): Promise<"ok" | "locked" | "insufficient"> => {
+      // Only balance beyond the still-locked bonus is withdrawable, so a
+      // user's own deposits are never locked — just promotional money.
       const updated = await q(
-        "update portfolios set balance = balance - $1 where user_id = $2 and balance >= $1 returning user_id",
+        `update portfolios set balance = balance - $1
+          where user_id = $2 and balance - locked_bonus >= $1 returning user_id`,
         [input.amount, user.id],
       );
-      if (updated.length === 0) return false;
+      if (updated.length === 0) {
+        const [p] = await q<{ balance: number }>("select balance from portfolios where user_id = $1", [user.id]);
+        return p && p.balance >= input.amount ? "locked" : "insufficient";
+      }
 
       const [withdrawal] = await q<{ id: string }>(
         `insert into withdrawals (user_id, amount, status, bank_name, bank_code, account_number, account_name)
@@ -211,10 +219,16 @@ export async function requestWithdrawal(input: {
           JSON.stringify({ withdrawal_id: withdrawal.id }),
         ],
       );
-      return true;
+      return "ok";
     });
 
-    if (!debited) return { ok: false, error: "Insufficient balance." };
+    if (outcome === "locked") {
+      return {
+        ok: false,
+        error: "Bonus money can be withdrawn after your first share purchase. Buy a share to unlock it.",
+      };
+    }
+    if (outcome === "insufficient") return { ok: false, error: "Insufficient balance." };
   } catch (e) {
     console.error("[withdrawal]", e);
     return { ok: false, error: "Could not submit the withdrawal. Please try again." };

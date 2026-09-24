@@ -34,10 +34,14 @@ export interface AdminOverview {
   withdrawalsPendingCount: number;
   purchasesTotal: number;
   purchasesCount: number;
+  /** Promo money credited so far (welcome + daily login) — what the bonuses have cost. */
+  bonusesCredited: number;
+  /** Bonus money still locked on user balances (not yet withdrawable). */
+  bonusesLocked: number;
 }
 
 export const getAdminOverview = cache(async (): Promise<AdminOverview> => {
-  const [users, deposits, withdrawals, purchases] = await Promise.all([
+  const [users, deposits, withdrawals, purchases, bonuses] = await Promise.all([
     query<{ n: number }>(`select count(*)::int as n from "user"`),
     query<{ total: number; pending: number }>(
       `select coalesce(sum(amount) filter (where status = 'completed'), 0) as total,
@@ -53,6 +57,12 @@ export const getAdminOverview = cache(async (): Promise<AdminOverview> => {
       `select coalesce(sum(amount), 0) as total, count(*)::int as n
          from transactions where type = 'share_purchase' and status = 'completed'`,
     ),
+    query<{ credited: number; locked: number }>(
+      `select
+         (select coalesce(sum(amount), 0) from transactions
+           where type in ('bonus', 'reward') and status = 'completed') as credited,
+         (select coalesce(sum(locked_bonus), 0) from portfolios) as locked`,
+    ),
   ]);
   return {
     totalUsers: users[0]?.n ?? 0,
@@ -62,6 +72,8 @@ export const getAdminOverview = cache(async (): Promise<AdminOverview> => {
     withdrawalsPendingCount: withdrawals[0]?.pending ?? 0,
     purchasesTotal: purchases[0]?.total ?? 0,
     purchasesCount: purchases[0]?.n ?? 0,
+    bonusesCredited: bonuses[0]?.credited ?? 0,
+    bonusesLocked: bonuses[0]?.locked ?? 0,
   };
 });
 
