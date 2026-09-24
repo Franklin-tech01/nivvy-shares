@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { normalizePhone } from "@/lib/phone";
-import { MIN_DEPOSIT_AMOUNT } from "@/lib/config";
+import { MIN_DEPOSIT_AMOUNT, MIN_WITHDRAWAL_AMOUNT } from "@/lib/config";
 
 const phone = z
   .string()
@@ -53,7 +53,10 @@ export const depositSchema = z.object({
 });
 
 export const withdrawSchema = z.object({
-  amount,
+  amount: amount.refine(
+    (v) => Number(v) >= MIN_WITHDRAWAL_AMOUNT,
+    `Minimum withdrawal is ₦${MIN_WITHDRAWAL_AMOUNT.toLocaleString("en-NG")}`,
+  ),
   bankCode: z.string().min(1, "Choose a bank"),
   accountNumber: z
     .string()

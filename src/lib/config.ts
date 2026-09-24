@@ -33,3 +33,6 @@ export const WITHDRAWALS_ENABLED = true;
 
 /** Smallest amount a user can deposit in one go (NGN). Enforced client + server side. */
 export const MIN_DEPOSIT_AMOUNT = 3000;
+
+/** Smallest withdrawal request (NGN). Enforced client + server side. */
+export const MIN_WITHDRAWAL_AMOUNT = 700;

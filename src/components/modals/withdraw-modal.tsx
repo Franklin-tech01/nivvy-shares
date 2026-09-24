@@ -13,7 +13,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { withdrawSchema } from "@/lib/schemas";
 import { getWithdrawalBanks, requestWithdrawal, verifyWithdrawalAccount } from "@/lib/actions/payments";
-import { WITHDRAWALS_ENABLED } from "@/lib/config";
+import { MIN_WITHDRAWAL_AMOUNT, WITHDRAWALS_ENABLED } from "@/lib/config";
 import type { Bank } from "@/lib/otpay";
 
 type Values = z.infer<typeof withdrawSchema>;
@@ -98,7 +98,7 @@ export function WithdrawModal({
             <Input
               id="wd-amount"
               inputMode="decimal"
-              placeholder="0.00"
+              placeholder={`Minimum ₦${MIN_WITHDRAWAL_AMOUNT.toLocaleString("en-NG")}`}
               aria-invalid={!!errors.amount}
               {...register("amount")}
             />

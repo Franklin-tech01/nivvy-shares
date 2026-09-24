@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/data";
 import { initializeCharge } from "@/lib/korapay";
 import { getBanks, verifyBankAccount, type Bank } from "@/lib/otpay";
 import { realEmail } from "@/lib/phone";
-import { MIN_DEPOSIT_AMOUNT, WITHDRAWALS_ENABLED } from "@/lib/config";
+import { MIN_DEPOSIT_AMOUNT, MIN_WITHDRAWAL_AMOUNT, WITHDRAWALS_ENABLED } from "@/lib/config";
 import { formatMoney } from "@/lib/utils";
 
 export type PaymentResult =
@@ -175,7 +175,11 @@ export async function requestWithdrawal(input: {
   if (!WITHDRAWALS_ENABLED) return { ok: false, error: "Withdrawals are temporarily paused." };
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "You are signed out." };
-  if (!(input.amount > 0)) return { ok: false, error: "Enter a valid amount." };
+  // Mirrors withdrawSchema's client-side check; enforced again here since a
+  // server action can be called directly, bypassing the form.
+  if (!(input.amount >= MIN_WITHDRAWAL_AMOUNT)) {
+    return { ok: false, error: `Minimum withdrawal is ${formatMoney(MIN_WITHDRAWAL_AMOUNT)}.` };
+  }
 
   let verified;
   try {
