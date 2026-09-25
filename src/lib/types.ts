@@ -91,6 +91,11 @@ export interface Withdrawal {
   processed_at: string | null;
 }
 
+export interface ReferralEarnings {
+  total: number;
+  transactions: { id: string; amount: number; created_at: string; from_user: string | null }[];
+}
+
 /** Admin views: a row flattened with who it belongs to. */
 export type AdminDeposit = {
   id: string;

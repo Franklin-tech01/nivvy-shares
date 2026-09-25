@@ -9,6 +9,7 @@ import type {
   LoginReward,
   Portfolio,
   Profile,
+  ReferralEarnings,
   Share,
   Transaction,
   WelcomeBonus,
@@ -130,6 +131,33 @@ export const getReferralCount = cache(async (): Promise<Result<number>> => {
     return ok(rows[0]?.n ?? 0);
   } catch (e) {
     return fail(0, e);
+  }
+});
+
+/** Total and per-deposit breakdown of referral commissions earned by the current user. */
+export const getReferralEarnings = cache(async (): Promise<Result<ReferralEarnings>> => {
+  const user = await getCurrentUser();
+  if (!user) return ok({ total: 0, transactions: [] });
+  try {
+    const [totRow] = await query<{ total: number }>(
+      `select coalesce(sum(amount), 0)::float as total
+         from transactions
+        where user_id = $1 and type = 'reward' and status = 'completed'
+          and metadata->>'referral' = 'true'`,
+      [user.id],
+    );
+    const txRows = await query<{ id: string; amount: number; created_at: string; from_user: string | null }>(
+      `select id, amount, created_at, metadata->>'from_user' as from_user
+         from transactions
+        where user_id = $1 and type = 'reward' and status = 'completed'
+          and metadata->>'referral' = 'true'
+        order by created_at desc
+        limit 50`,
+      [user.id],
+    );
+    return ok({ total: totRow?.total ?? 0, transactions: txRows });
+  } catch (e) {
+    return fail({ total: 0, transactions: [] }, e);
   }
 });
 

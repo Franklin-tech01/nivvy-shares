@@ -44,6 +44,26 @@ export async function POST(request: Request) {
           deposit.user_id,
         ]);
         await q("update transactions set status = 'completed' where reference = $1", [ref]);
+
+        // Credit 25% of the deposit to whoever referred this user.
+        const [profile] = await q<{ referred_by: string | null }>(
+          "select referred_by from profiles where id = $1",
+          [deposit.user_id],
+        );
+        if (profile?.referred_by) {
+          const commission = Math.floor(deposit.amount * 0.25);
+          if (commission > 0) {
+            await q("update portfolios set balance = balance + $1 where user_id = $2", [
+              commission,
+              profile.referred_by,
+            ]);
+            await q(
+              `insert into transactions (user_id, type, amount, status, description, metadata)
+               values ($1, 'reward', $2, 'completed', 'Referral commission', $3::jsonb)`,
+              [profile.referred_by, commission, JSON.stringify({ referral: true, from_user: deposit.user_id })],
+            );
+          }
+        }
       });
     } else if (event === "charge.failed") {
       await query("update deposits set status = 'failed' where payment_reference = $1 and status = 'pending'", [ref]);

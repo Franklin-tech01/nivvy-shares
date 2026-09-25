@@ -15,6 +15,7 @@ import {
 	getPortfolio,
 	getProfile,
 	getReferralCount,
+	getReferralEarnings,
 	getWelcomeBonus,
 } from "@/lib/data";
 import { realEmail } from "@/lib/phone";
@@ -23,7 +24,7 @@ import { firstName } from "@/lib/utils";
 export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
-	const [user, profile, portfolio, holdings, reward, bonus, referrals] =
+	const [user, profile, portfolio, holdings, reward, bonus, referrals, referralEarnings] =
 		await Promise.all([
 			getCurrentUser(),
 			getProfile(),
@@ -32,6 +33,7 @@ export default async function DashboardPage() {
 			getLoginReward(),
 			getWelcomeBonus(),
 			getReferralCount(),
+			getReferralEarnings(),
 		]);
 	// Canonical public URL, so an invite link copied in dev still points at the live site.
 	const baseUrl = (process.env.BETTER_AUTH_URL ?? "").replace(/\/+$/, "");
@@ -69,6 +71,7 @@ export default async function DashboardPage() {
 					code={profile.data.ref_code}
 					baseUrl={baseUrl}
 					count={referrals.data}
+					earnings={referralEarnings.data}
 				/>
 			)}
 
