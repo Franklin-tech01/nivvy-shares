@@ -5,6 +5,7 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { HoldingsCard } from "@/components/dashboard/holdings-card";
 import { PortfolioCard } from "@/components/dashboard/portfolio-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
+import { ReferralCard } from "@/components/dashboard/referral-card";
 import { WelcomeBonusCard } from "@/components/dashboard/welcome-bonus-card";
 import { ErrorNotice } from "@/components/layout/page-header";
 import {
@@ -13,6 +14,7 @@ import {
 	getLoginReward,
 	getPortfolio,
 	getProfile,
+	getReferralCount,
 	getWelcomeBonus,
 } from "@/lib/data";
 import { realEmail } from "@/lib/phone";
@@ -21,16 +23,18 @@ import { firstName } from "@/lib/utils";
 export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
-	const [user, profile, portfolio, holdings, reward, bonus] = await Promise.all(
-		[
+	const [user, profile, portfolio, holdings, reward, bonus, referrals] =
+		await Promise.all([
 			getCurrentUser(),
 			getProfile(),
 			getPortfolio(),
 			getHoldings(),
 			getLoginReward(),
 			getWelcomeBonus(),
-		],
-	);
+			getReferralCount(),
+		]);
+	// Canonical public URL, so an invite link copied in dev still points at the live site.
+	const baseUrl = (process.env.BETTER_AUTH_URL ?? "").replace(/\/+$/, "");
 
 	const sharesOwned = holdings.data.reduce((n, h) => n + h.quantity, 0);
 	const errors = [profile, portfolio, holdings, reward, bonus]
@@ -59,6 +63,14 @@ export default async function DashboardPage() {
 			<QuickActions />
 
 			<HoldingsCard holdings={holdings.data} />
+
+			{profile.data && (
+				<ReferralCard
+					code={profile.data.ref_code}
+					baseUrl={baseUrl}
+					count={referrals.data}
+				/>
+			)}
 
 			<div className='grid gap-4 lg:grid-cols-2'>
 				<WelcomeBonusCard bonus={bonus.data} hasPurchased={holdings.data.length > 0} />

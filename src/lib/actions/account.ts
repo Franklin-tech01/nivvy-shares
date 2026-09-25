@@ -54,6 +54,35 @@ export async function submitSupportTicket(
 }
 
 /**
+ * Links a brand-new account to the person whose invite link it signed up
+ * through. Only works for an account with no referrer yet that was created in
+ * the last 15 minutes, so it can't be used later to reassign anyone, and never
+ * for your own code. Tracking only — nothing is paid or credited for referrals.
+ * Failures are silent to the caller on purpose (a bad link shouldn't block signup).
+ */
+export async function applyReferral(code: string): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "You are signed out." };
+  const clean = code.trim().toUpperCase();
+  if (!/^[A-Z0-9]{8}$/.test(clean)) return { ok: false, error: "Invalid referral code." };
+  try {
+    const rows = await query(
+      `update profiles set referred_by = r.id
+         from profiles r
+        where profiles.id = $1 and profiles.referred_by is null
+          and r.ref_code = $2 and r.id <> $1
+          and profiles.created_at > now() - interval '15 minutes'
+        returning profiles.id`,
+      [user.id, clean],
+    );
+    return rows.length > 0 ? { ok: true } : { ok: false, error: "Referral not applied." };
+  } catch (e) {
+    console.error("[referral]", e);
+    return { ok: false, error: "Referral not applied." };
+  }
+}
+
+/**
  * Records today's login: updates the streak and credits the promotional
  * bonuses (one-time welcome bonus, then the daily login bonus once per UTC
  * day). Safe to call any number of times — each credit is claimed with a

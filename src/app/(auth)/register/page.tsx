@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
+import { applyReferral } from "@/lib/actions/account";
 import { registerSchema } from "@/lib/schemas";
 import { normalizePhone, phoneToEmail } from "@/lib/phone";
 
@@ -38,6 +39,11 @@ export default function RegisterPage() {
       );
       return;
     }
+    // Attribute the signup to the invite link it came from (/register?ref=CODE).
+    // Read from the URL here rather than useSearchParams to avoid a Suspense
+    // boundary; a bad or missing code never blocks signup.
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) await applyReferral(ref).catch(() => undefined);
     router.replace("/dashboard");
     router.refresh();
   }

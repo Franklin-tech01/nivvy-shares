@@ -11,6 +11,8 @@ export interface Profile {
   avatar_url: string | null;
   account_status: "active" | "suspended" | "pending";
   is_admin: boolean;
+  /** This user's own referral code, used in their invite link. */
+  ref_code: string;
   created_at: string;
   updated_at: string;
 }

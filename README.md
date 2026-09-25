@@ -108,3 +108,11 @@ OTPay payout wallet funded separately.
   credit nothing twice. The client sends no amounts.
 - `/admin` shows **Bonuses credited** (total promo spend) and **Bonus money still locked**.
 - Nothing about a balance is stored in the browser.
+
+## Referral links
+
+Every profile has a unique `ref_code` (8 characters, created by the database). The dashboard's **Your Invite
+Link** card shows `<site>/register?ref=CODE` and how many accounts signed up through it. On signup, the
+register page calls `applyReferral`, which sets `referred_by` — only for an account with no referrer that is
+under 15 minutes old, and never for your own code. **Tracking only: no rewards, commissions or payouts are
+attached to referrals anywhere in the app**, and the count shows no names or numbers.

@@ -118,6 +118,21 @@ export const getLoginReward = cache(async (): Promise<Result<LoginReward | null>
   }
 });
 
+/** How many accounts signed up through the current user's referral link. Just a count — no names or numbers. */
+export const getReferralCount = cache(async (): Promise<Result<number>> => {
+  const user = await getCurrentUser();
+  if (!user) return ok(0);
+  try {
+    const rows = await query<{ n: number }>(
+      "select count(*)::int as n from profiles where referred_by = $1",
+      [user.id],
+    );
+    return ok(rows[0]?.n ?? 0);
+  } catch (e) {
+    return fail(0, e);
+  }
+});
+
 export const getWelcomeBonus = cache(async (): Promise<Result<WelcomeBonus | null>> => {
   const user = await getCurrentUser();
   if (!user) return ok(null);
