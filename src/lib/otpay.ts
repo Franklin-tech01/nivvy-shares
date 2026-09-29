@@ -111,6 +111,7 @@ export async function payout(input: { bankAccountNo: string; bankCode: string; a
   if (json?.status !== true) {
     // A parsed response with a clear false/failure is a definite failure, not
     // an ambiguous one — safe to report as "didn't happen".
+    console.error("[otpay:payout] rejected:", JSON.stringify(json));
     throw new Error((json?.desc as string) || `OTPay payout failed (HTTP ${res.status})`);
   }
   return {
