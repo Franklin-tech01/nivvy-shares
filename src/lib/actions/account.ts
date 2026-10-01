@@ -5,7 +5,7 @@ import type { z } from "zod";
 import { query, withTransaction } from "@/lib/db";
 import { getCurrentUser } from "@/lib/data";
 import { profileSchema, supportSchema } from "@/lib/schemas";
-import { BONUSES_ENABLED, DAILY_LOGIN_BONUS, WELCOME_BONUS_AMOUNT } from "@/lib/config";
+import { BONUSES_ENABLED, DAILY_LOGIN_BONUS, SHARE_EARNINGS_ENABLED, WELCOME_BONUS_AMOUNT } from "@/lib/config";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -83,14 +83,17 @@ export async function applyReferral(code: string): Promise<ActionResult> {
 }
 
 /**
- * Records today's login: updates the streak and credits the promotional
- * bonuses (one-time welcome bonus, then the daily login bonus once per UTC
- * day). Safe to call any number of times — each credit is claimed with a
- * guarded UPDATE, so a repeat call, a second tab, or a race credits nothing
- * twice. Amounts are constants on the server; the client sends nothing.
+ * Records today's login: updates the streak, credits the promotional bonuses
+ * (one-time welcome bonus, then the daily login bonus once per UTC day), and
+ * credits today's share earnings based on current holdings. Safe to call any
+ * number of times — each credit is claimed with a guarded UPDATE, so a repeat
+ * call, a second tab, or a race credits nothing twice. Amounts are computed
+ * or read from constants on the server; the client sends nothing.
  *
- * Credited money goes to `balance` and is also counted in `locked_bonus`
- * until the user's first share purchase (unless they've already made one).
+ * Promotional bonus money goes to `balance` and is also counted in
+ * `locked_bonus` until the user's first share purchase (unless they've
+ * already made one). Share earnings are never locked — they only accrue once
+ * a purchase already exists — and go straight to `balance`.
  */
 export async function recordLogin(): Promise<ActionResult> {
   const user = await getCurrentUser();
@@ -99,6 +102,36 @@ export async function recordLogin(): Promise<ActionResult> {
   try {
     await withTransaction(async (q) => {
       await q("select record_daily_login($1)", [userId]);
+
+      if (SHARE_EARNINGS_ENABLED) {
+        await q("insert into share_earnings (user_id) values ($1) on conflict (user_id) do nothing", [userId]);
+        const [due] = await q<{ amount: number }>(
+          `select coalesce(sum(h.quantity * s.daily_earning), 0) as amount
+             from holdings h join shares s on s.id = h.share_id
+            where h.user_id = $1`,
+          [userId],
+        );
+        const amount = due?.amount ?? 0;
+        if (amount > 0) {
+          const credited = await q(
+            `update share_earnings
+                set last_earned_on = (now() at time zone 'utc')::date,
+                    total_earned = total_earned + $1
+              where user_id = $2 and last_earned_on is distinct from (now() at time zone 'utc')::date
+              returning id`,
+            [amount, userId],
+          );
+          if (credited.length > 0) {
+            await q("update portfolios set balance = balance + $1 where user_id = $2", [amount, userId]);
+            await q(
+              `insert into transactions (user_id, type, amount, status, description, metadata)
+               values ($1, 'reward', $2, 'completed', 'Daily share earnings', '{"share_earning": true}'::jsonb)`,
+              [userId, amount],
+            );
+          }
+        }
+      }
+
       if (!BONUSES_ENABLED) return;
 
       async function credit(amount: number, type: "bonus" | "reward", description: string) {

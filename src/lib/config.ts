@@ -23,6 +23,13 @@ export const BONUSES_ENABLED = true;
 export const WELCOME_BONUS_AMOUNT = 700;
 export const DAILY_LOGIN_BONUS = 200;
 
+/**
+ * Daily share earnings: a fixed payout per share held (see `shares.daily_earning`,
+ * migration 0008), credited straight to `balance` once per UTC day — not a
+ * promotional bonus, so it has its own kill switch independent of BONUSES_ENABLED.
+ */
+export const SHARE_EARNINGS_ENABLED = true;
+
 export const COMMUNITY_POPUP_STORAGE_KEY = "nivvy:community-popup-dismissed";
 
 /**

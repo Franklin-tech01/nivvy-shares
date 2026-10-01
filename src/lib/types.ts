@@ -23,6 +23,8 @@ export interface Share {
   symbol: string;
   description: string | null;
   price: number;
+  /** Fixed daily payout per share held, credited to `balance` once per UTC day. */
+  daily_earning: number;
   tier: ShareTier;
   badge: string | null;
   image_url: string | null;
@@ -46,7 +48,7 @@ export interface Holding {
   share_id: string;
   quantity: number;
   purchase_price: number;
-  shares: Pick<Share, "name" | "symbol" | "tier"> | null;
+  shares: Pick<Share, "name" | "symbol" | "tier" | "daily_earning"> | null;
 }
 
 export interface Transaction {
@@ -66,6 +68,12 @@ export interface LoginReward {
   last_login_date: string | null;
   rewarded_on: string | null;
   total_rewards: number;
+}
+
+export interface ShareEarnings {
+  id: string;
+  last_earned_on: string | null;
+  total_earned: number;
 }
 
 export interface WelcomeBonus {

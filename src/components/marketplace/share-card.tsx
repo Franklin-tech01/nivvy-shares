@@ -30,6 +30,9 @@ export function ShareCard({ share }: { share: Share }) {
       <p className="mt-0.5 text-xs font-medium text-muted-foreground">{share.symbol}</p>
 
       <p className="tabular mt-4 font-display text-2xl font-semibold">{formatMoney(share.price)}</p>
+      <p className="tabular text-sm font-semibold text-success">
+        {formatMoney(share.daily_earning)}<span className="font-normal text-muted-foreground"> / day</span>
+      </p>
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <StatusBadge kind="share" status={share.status} />

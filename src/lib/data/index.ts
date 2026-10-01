@@ -11,6 +11,7 @@ import type {
   Profile,
   ReferralEarnings,
   Share,
+  ShareEarnings,
   Transaction,
   WelcomeBonus,
 } from "@/lib/types";
@@ -81,7 +82,7 @@ export const getHoldings = cache(async (): Promise<Result<Holding[]>> => {
   try {
     const rows = await query<Holding>(
       `select h.id, h.share_id, h.quantity, h.purchase_price,
-              json_build_object('name', s.name, 'symbol', s.symbol, 'tier', s.tier) as shares
+              json_build_object('name', s.name, 'symbol', s.symbol, 'tier', s.tier, 'daily_earning', s.daily_earning) as shares
          from holdings h join shares s on s.id = h.share_id
         where h.user_id = $1
         order by h.created_at desc`,
@@ -158,6 +159,18 @@ export const getReferralEarnings = cache(async (): Promise<Result<ReferralEarnin
     return ok({ total: totRow?.total ?? 0, transactions: txRows });
   } catch (e) {
     return fail({ total: 0, transactions: [] }, e);
+  }
+});
+
+/** The current user's daily share-earnings credit state (see migration 0008). */
+export const getShareEarnings = cache(async (): Promise<Result<ShareEarnings | null>> => {
+  const user = await getCurrentUser();
+  if (!user) return ok(null);
+  try {
+    const rows = await query<ShareEarnings>("select * from share_earnings where user_id = $1", [user.id]);
+    return ok(rows[0] ?? null);
+  } catch (e) {
+    return fail(null, e);
   }
 });
 

@@ -6,6 +6,7 @@ import { HoldingsCard } from "@/components/dashboard/holdings-card";
 import { PortfolioCard } from "@/components/dashboard/portfolio-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { ReferralCard } from "@/components/dashboard/referral-card";
+import { ShareEarningsCard } from "@/components/dashboard/share-earnings-card";
 import { WelcomeBonusCard } from "@/components/dashboard/welcome-bonus-card";
 import { ErrorNotice } from "@/components/layout/page-header";
 import {
@@ -16,6 +17,7 @@ import {
 	getProfile,
 	getReferralCount,
 	getReferralEarnings,
+	getShareEarnings,
 	getWelcomeBonus,
 } from "@/lib/data";
 import { realEmail } from "@/lib/phone";
@@ -24,7 +26,7 @@ import { firstName } from "@/lib/utils";
 export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
-	const [user, profile, portfolio, holdings, reward, bonus, referrals, referralEarnings] =
+	const [user, profile, portfolio, holdings, reward, bonus, referrals, referralEarnings, shareEarnings] =
 		await Promise.all([
 			getCurrentUser(),
 			getProfile(),
@@ -34,12 +36,13 @@ export default async function DashboardPage() {
 			getWelcomeBonus(),
 			getReferralCount(),
 			getReferralEarnings(),
+			getShareEarnings(),
 		]);
 	// Canonical public URL, so an invite link copied in dev still points at the live site.
 	const baseUrl = (process.env.BETTER_AUTH_URL ?? "").replace(/\/+$/, "");
 
 	const sharesOwned = holdings.data.reduce((n, h) => n + h.quantity, 0);
-	const errors = [profile, portfolio, holdings, reward, bonus]
+	const errors = [profile, portfolio, holdings, reward, bonus, shareEarnings]
 		.map((r) => r.error)
 		.filter(Boolean) as string[];
 
@@ -65,6 +68,8 @@ export default async function DashboardPage() {
 			<QuickActions />
 
 			<HoldingsCard holdings={holdings.data} />
+
+			<ShareEarningsCard holdings={holdings.data} earnings={shareEarnings.data} />
 
 			{profile.data && (
 				<ReferralCard

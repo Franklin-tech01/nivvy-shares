@@ -96,6 +96,12 @@ export function BuyShareModal({
                   {formatMoney(share.price * quantity)}
                 </dd>
               </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-muted-foreground">Daily earnings</dt>
+                <dd className="tabular font-semibold text-success">
+                  {formatMoney(share.daily_earning * quantity)}/day
+                </dd>
+              </div>
             </dl>
 
             <p className="text-xs text-muted-foreground">Paid from your Nivvy balance. Deposit funds first if needed.</p>

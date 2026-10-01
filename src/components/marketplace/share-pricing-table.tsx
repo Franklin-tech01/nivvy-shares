@@ -19,10 +19,11 @@ export function SharePricingTable({ shares }: { shares: Share[] }) {
     <Card className="overflow-hidden">
       <div
         aria-hidden
-        className="hidden grid-cols-[1.6fr_1fr_1fr_auto] items-center gap-4 bg-navy px-5 py-3 text-xs font-semibold uppercase tracking-wide text-navy-foreground md:grid"
+        className="hidden grid-cols-[1.6fr_1fr_1fr_1fr_auto] items-center gap-4 bg-navy px-5 py-3 text-xs font-semibold uppercase tracking-wide text-navy-foreground md:grid"
       >
         <span>Share</span>
         <span>Price</span>
+        <span>Daily Earnings</span>
         <span>Status</span>
         <span className="w-24" />
       </div>
@@ -31,7 +32,7 @@ export function SharePricingTable({ shares }: { shares: Share[] }) {
         {shares.map((s) => (
           <li
             key={s.id}
-            className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 px-4 py-4 transition-colors hover:bg-muted/50 md:grid-cols-[1.6fr_1fr_1fr_auto] md:px-5"
+            className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 px-4 py-4 transition-colors hover:bg-muted/50 md:grid-cols-[1.6fr_1fr_1fr_1fr_auto] md:px-5"
           >
             <div className="flex min-w-0 items-center gap-3">
               <LogoMark className="size-10 shrink-0" />
@@ -51,6 +52,10 @@ export function SharePricingTable({ shares }: { shares: Share[] }) {
 
             <p className="tabular text-right font-display text-lg font-semibold md:text-left">
               {formatMoney(s.price)}
+            </p>
+
+            <p className="tabular text-right text-sm font-semibold text-success md:text-left">
+              {formatMoney(s.daily_earning)}<span className="text-muted-foreground">/day</span>
             </p>
 
             <div className="col-start-1 md:col-start-auto">
